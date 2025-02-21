@@ -1,0 +1,5 @@
+each batch will be like a accordian
+expand and will show all the projects inside it 
+i will have a start button on the project
+send request to the ai and tell it to generate steps to execute the project.
+i will get a google-calander link which will put starting date and ending date for the perticular project
