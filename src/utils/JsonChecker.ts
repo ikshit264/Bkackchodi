@@ -9,7 +9,7 @@ export const validateJsonStructure = (jsonObject) => {
       title: "string",
       description: "string",
       level: "string",
-      learning_objectives: "object", // Expecting an array (typeof array is "object")
+      learningObjectives: "object", // Expecting an array (typeof array is "object")
     };
   
     for (const key in jsonObject) {
@@ -20,11 +20,11 @@ export const validateJsonStructure = (jsonObject) => {
           return { valid: false, error: `Missing key: ${requiredKey} in object ${key}` };
         }
   
-        if (requiredKey === "learning_objectives" && !Array.isArray(item[requiredKey])) {
+        if (requiredKey === "learningObjectives" && !Array.isArray(item[requiredKey])) {
           return { valid: false, error: `Invalid type for key: ${requiredKey} in object ${key}. Expected an array.` };
         }
   
-        if (requiredKey !== "learning_objectives" && typeof item[requiredKey] !== requiredKeys[requiredKey]) {
+        if (requiredKey !== "learningObjectives" && typeof item[requiredKey] !== requiredKeys[requiredKey]) {
           return { valid: false, error: `Type mismatch for key: ${requiredKey} in object ${key}. Expected ${requiredKeys[requiredKey]}, found ${typeof item[requiredKey]}` };
         }
       }

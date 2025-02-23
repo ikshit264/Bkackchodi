@@ -30,8 +30,6 @@ export async function GET() {
       return NextResponse.json({ success: false, message: "User not found" }, { status: 404 });
     }
 
-    console.log(clerkUser.courses)
-
     return NextResponse.json(
       {
         success: true,

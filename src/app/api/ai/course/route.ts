@@ -1,8 +1,8 @@
 import { ChatPromptTemplate } from "@langchain/core/prompts";
 import { NextResponse } from "next/server";
-import { PROMPT } from "@/utils/prompt";
 import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
 import { StringOutputParser } from "@langchain/core/output_parsers";
+import { PROMPT_COURSE } from "../../../../utils/prompt";
 // import { ChatGroq } from "@langchain/groq";
 
 
@@ -24,7 +24,7 @@ const llm = new ChatGoogleGenerativeAI({
 });
 
 const prompt = ChatPromptTemplate.fromMessages([
-  ["system", PROMPT as string],
+  ["system", PROMPT_COURSE as string],
   [
     "human",
     `Generate a learning roadmap for:

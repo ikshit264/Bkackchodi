@@ -7,6 +7,7 @@ import { MdMessage } from "react-icons/md";
 import { IoMdSettings, IoIosArrowForward } from "react-icons/io";
 import { AiOutlinePlusCircle } from "react-icons/ai";
 import { DiGoogleAnalytics } from "react-icons/di";
+import { RefreshCw } from "lucide-react";
 import Link from "next/link";
 import axios from "axios";
 
@@ -19,23 +20,22 @@ const Sidenav = () => {
   const [error, setError] = useState("");
 
   const menuItems = [
-    { icon: FaHome, label: "Dashboard", link: "dashboard" },
+    { icon: FaHome, label: "Dashboard", href: "/dashboard" },
     { icon: MdMessage, label: "Courses", expandable: true },
-    { icon: AiOutlinePlusCircle, label: "New Course", link: "new_course" },
-    { icon: DiGoogleAnalytics, label: "Analytics", link: "analytics" },
-    { icon: IoMdSettings, label: "Settings", link: "settings" },
+    { icon: AiOutlinePlusCircle, label: "New Course", href: "/new_course" },
+    { icon: DiGoogleAnalytics, label: "Analytics", href: "/analytics" },
+    { icon: IoMdSettings, label: "Settings", href: "/settings" },
   ];
 
-  // 🚀 Fetch Courses with Proper Error Handling
   const getCourses = async () => {
     try {
       setLoading(true);
       const response = await axios.get("/api/query/course");
-
+      
       if (response.status !== 200) {
         throw new Error("Failed to fetch courses. Please try again.");
       }
-
+      
       const jsonData = response.data.data;
 
       if (!jsonData || jsonData.length === 0) {
@@ -48,15 +48,14 @@ const Sidenav = () => {
       return { status: "error", data: [], error: err.message };
     } finally {
       setLoading(false);
+      setIsCoursesExpanded(true);
     }
   };
 
-  // 📦 Load Courses on Component Mount
   useEffect(() => {
     const fetchCourses = async () => {
       const result = await getCourses();
       if (result.status === "success") {
-        console.log(result);
         setCourses(result.data);
       } else {
         setError(result.error);
@@ -66,7 +65,6 @@ const Sidenav = () => {
     fetchCourses();
   }, []);
 
-  // 🖱️ Mouse Hover Handler
   useEffect(() => {
     const handleMouseMove = (event) => {
       const mouseX = event.clientX;
@@ -114,18 +112,29 @@ const Sidenav = () => {
                   {item.label}
                 </span>
                 {isExpanded && (
-                  <motion.span
-                    animate={{ rotate: isCoursesExpanded ? 90 : 0 }}
-                    transition={{ duration: 0.2 }}
-                    className="ml-auto"
-                  >
-                    <IoIosArrowForward size={20} />
-                  </motion.span>
+                  <div className="flex justify-between ml-auto gap-4">
+                    <motion.span
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        getCourses();
+                      }}
+                      animate={{ rotate: loading ? 720 : 0 }}
+                      transition={{ duration: 1 }}
+                    >
+                      <RefreshCw size={18} />
+                    </motion.span>
+                    <motion.span
+                      animate={{ rotate: isCoursesExpanded ? 90 : 0 }}
+                      transition={{ duration: 0.2 }}
+                    >
+                      <IoIosArrowForward size={20} />
+                    </motion.span>
+                  </div>
                 )}
               </div>
             ) : (
               <Link
-                href={item.link || ""}
+                href={item.href}
                 className="flex items-center px-4 py-3 hover:bg-gray-800 cursor-pointer transition-colors"
               >
                 <item.icon size={24} />
@@ -139,7 +148,6 @@ const Sidenav = () => {
               </Link>
             )}
 
-            {/* 🎯 Courses Section */}
             <AnimatePresence>
               {item.expandable && isCoursesExpanded && isExpanded && (
                 <motion.div
@@ -167,7 +175,10 @@ const Sidenav = () => {
                         transition={{ delay: idx * 0.1, duration: 0.2 }}
                         className="flex justify-between items-center px-4 py-2 text-sm bg-gray-800 rounded-md my-1"
                       >
-                        <Link href={`/courses/${course.id}`} className="flex items-center justify-between w-full">
+                        <Link
+                          href={`/courses/${course.id}`}
+                          className="flex items-center justify-between w-full"
+                        >
                           <span>{course.title}</span>
                           <span
                             className={`text-xs px-2 py-1 rounded ${
