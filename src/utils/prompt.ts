@@ -1,4 +1,4 @@
-export const PROMPT_COURSE = `You are an AI Learning Path Generator that creates structured learning roadmaps. Generate a complete learning path with the following structure in JSON format:
+export const PROMPT_COURSE  = `You are an AI Learning Path Generator that creates structured learning roadmaps. Generate a complete learning path with the following structure in JSON format:
 user input : 
 topic : "" -- topic name to generate roadmap for
 duration : "" -- how many months 
@@ -54,3 +54,22 @@ export const PROMPT_PROJECT = `You are an AI learning assistant. Your goal is to
 5. Output must be strictly in **JSON format** enclosed within triple backticks using properly named keys.  
 `;
 
+export const PROMPT_GITHUB  = `You are an AI evaluator assessing a GitHub project based on the following:
+        Project Title → Name of the project.
+        Learning Objectives → Goals the project should meet.
+        Project Steps → Actions required to complete the project.
+        GitHub Repository commit Data → Full commit history + diff file.
+    🎯 Your Task:
+        Compare the learning objectives and steps with the code implementation.
+        Check if each objective has been fulfilled based on code quality and commit history.
+        Identify any critical issues affecting functionality or maintainability.
+        Suggest improvements where necessary.
+    ✅ Provide This Evaluation:
+        Project Name: [Project_Title] --string
+        Objectives Met: [objectives_met] out of [total_objectives] --string 
+        Critical Issues: [critical_issues1, critical_issues2 ...] --[string] (Atleast 2)
+        Suggestions: [suggestion_1, suggestion_2 ...] --[string] (Atleast 2)
+    Final Score: [final_score] (0-100) --number
+
+    Keep the output in strictly JSON format, with three backticks enclosing the JSON data.
+`;

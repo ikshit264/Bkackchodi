@@ -59,7 +59,7 @@ const AiCall = ({
     const batches: Record<number, Batch> = {};
 
     projects.forEach((project) => {
-      const batchId = project.batch-1;
+      const batchId = project.batch-1; // Removed -1 as batch should directly reflect its actual value
       if (!batches[batchId]) {
         batches[batchId] = {
           batchId,
@@ -87,54 +87,75 @@ const AiCall = ({
       if (response.status === 201) {
         console.log("Course uploaded successfully!", response.data);
       } else {
-        const jsondata = await response.data;
-        setError(jsondata.message ??  jsondata.error);
+        setError(response.data.message || response.data.error);
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error("Error uploading course:", err);
+      setError("Failed to upload course data.");
     }
   };
 
   const processData = async () => {
     setLoading(true);
     setError("");
-
+  
     try {
-      // const response = await axios.post("/api/ai", {
-      //   topic: prompt,
-      //   time_duration: timeDuration,
-      // });
-      const jsonObject = JSON.parse(JSON.stringify(test.projects));
-      // await new Promise((resolve) => setTimeout(resolve, 5000)); // Mocking delay
-
-      const checkJson = validateJsonStructure(jsonObject);
-
+      const response = await axios.post("/api/ai/course", {
+        topic: prompt,
+        time_duration: timeDuration,
+      });
+  
+      if (response.status !== 200) {
+        throw new Error("AI service error.");
+      }
+  
+      const data = response.data;
+      console.log("Full response data:", data);
+  
+      // Parse the jsonObject string into an actual object
+      let parsedJson;
+      try {
+        parsedJson = JSON.parse(data.jsonObject);
+      } catch (parseError) {
+        throw new Error("Invalid JSON format received from API.");
+      }
+  
+      const projects = parsedJson?.projects;
+  
+      if (!Array.isArray(projects)) {
+        throw new Error("Invalid data format: Projects should be an array.");
+      }
+  
+      console.log("Processed projects array:", projects);
+      const checkJson = validateJsonStructure(projects);
+  
       if (checkJson.valid) {
         setConditionalVariable(true);
-
-        const sortedJson = filterByBatches(jsonObject);
-        onOutputChange(sortedJson);
-        onMetadataChange(test.METADATA);
-
-        // Send to backend
-        await uploadCourse(test.METADATA.topic, test.METADATA.generalTip, sortedJson);
+  
+        const sortedBatches = filterByBatches(projects);
+        onOutputChange(sortedBatches);
+        onMetadataChange(parsedJson.METADATA);
+  
+        await uploadCourse(
+          parsedJson.METADATA.topic,
+          parsedJson.METADATA.generalTip,
+          sortedBatches
+        );
       } else {
         setError(checkJson.error);
-        setLoading(false);
       }
     } catch (err) {
       console.error("Error processing data:", err);
       setError("An error occurred while processing your request.");
-      setLoading(false);
     } finally {
       setLoading(false);
     }
   };
-
+  
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!prompt || !timeDuration) {
-      setError("Please fill in both fields.");
+    if (!prompt.trim() || !timeDuration.trim()) {
+      setError("Both fields are required.");
       return;
     }
     processData();
@@ -162,13 +183,16 @@ const AiCall = ({
         {error && <div className="text-red-500 text-lg py-2">{error}</div>}
         <button
           type="submit"
-          className="bg-blue-500 text-white px-4 py-2 rounded-md active:bg-blue-700 w-full"
+          className={`${
+            loading ? "bg-gray-400" : "bg-blue-500"
+          } text-white px-4 py-2 rounded-md w-full`}
           disabled={loading}
         >
           {loading ? "Processing..." : "Send"}
         </button>
       </form>
 
+      {/* Uncomment this for multi-step loader animation */}
       {/* <MultiStepLoader
         loadingStates={loadingStates}
         loading={loading}

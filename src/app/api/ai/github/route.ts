@@ -2,7 +2,8 @@ import { ChatPromptTemplate } from "@langchain/core/prompts";
 import { NextResponse } from "next/server";
 import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
 import { StringOutputParser } from "@langchain/core/output_parsers";
-import { PROMPT_COURSE } from "../../../../utils/prompt";
+import { PROMPT_GITHUB } from "../../../../utils/prompt";
+import { GithubDataCollect } from "../../../../utils/GithubBackchodi";
 
 const llm = new ChatGoogleGenerativeAI({
   model: "gemini-2.0-flash-001",
@@ -12,27 +13,33 @@ const llm = new ChatGoogleGenerativeAI({
 });
 
 const prompt = ChatPromptTemplate.fromMessages([
-  ["system", PROMPT_COURSE as string],
+  ["system", PROMPT_GITHUB as string],
   [
     "human",
-    `Generate a learning roadmap for:
-    - Topic: {topic}
-    - Duration: {time_duration} months
-    `,
+    `title : {title}, 
+    learning_objectives : {learning_objectives}, 
+    steps : {steps}, 
+    github_repo_commit_data : {github_repo_commit_data}`,
   ],
 ]);
+
 
 const outputParser = new StringOutputParser();
 
 const chain = prompt.pipe(llm).pipe(outputParser);
 
+
 export async function POST(req: Request) {
   try {
-    const { topic, time_duration } = await req.json();
+    const { owner, repo, topic, learning_objectives, steps } = await req.json();
+
+    const github_repo_commit_data = await GithubDataCollect(owner, repo);
 
     const res = await chain.invoke({
-      topic,
-      time_duration,
+      title : topic,
+      learning_objectives,
+      steps,
+      github_repo_commit_data
     });
 
     const { jsonObject, text } = separateJSONandText(res);
@@ -45,10 +52,10 @@ export async function POST(req: Request) {
   }
 }
 
-
 function separateJSONandText(data: string): { jsonObject: string; text: string } {
-  const jsonMatches = data.match(/```json([\s\S]*?)```/g);
-  const jsonObject = jsonMatches ? jsonMatches.map(match => match.replace(/```json|```/g, "").trim()).join("\n") : "";
-  const text = data.replace(/```json([\s\S]*?)```/g, "").trim();
-  return { jsonObject, text };
-}
+    const jsonMatches = data.match(/```json([\s\S]*?)```/g);
+    const jsonObject = jsonMatches ? jsonMatches.map(match => match.replace(/```json|```/g, "").trim()).join("\n") : "";
+    const text = data.replace(/```json([\s\S]*?)```/g, "").trim();
+    return { jsonObject, text };
+  }
+  

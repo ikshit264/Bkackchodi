@@ -177,7 +177,7 @@ const ProjectCard = ({ project, onStartProject }: ProjectCardProps) => {
           )}
         </>
       ) : (
-        <GithubEvaluation /> // Render the GitHubEvaluation component
+        <GithubEvaluation project={project}/> // Render the GitHubEvaluation component
       )}
     </div>
   );

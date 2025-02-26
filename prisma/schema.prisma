@@ -56,34 +56,7 @@ model Project {
   batch              Batch    @relation(fields: [batchId], references: [id], onDelete: Cascade)
   learningObjectives Json     @db.JsonB // Store nested objectives as JSON changes
   steps              Json?     @db.JsonB // Stores all the steps but i is optional
+  GithubData         Json?     @db.JsonB // Store GitHub data
   createdAt          DateTime @default(now())
   updatedAt          DateTime @updatedAt
 }
-
-// model LearningObjective {
-//   id         String   @id @default(uuid())
-//   projectId  String
-//   project    Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
-//   title      String
-//   resources  Resource[]
-//   steps      Step[]
-//   createdAt  DateTime @default(now())
-//   updatedAt  DateTime @updatedAt
-// }
-
-// model Resource {
-//   id      String   @id @default(uuid())
-//   type    String   // e.g., "Video", "Article", "Book"
-//   title   String
-//   url     String?  // Optional, might not exist for books
-//   learningObjectiveId String
-//   learningObjective LearningObjective @relation(fields: [learningObjectiveId], references: [id], onDelete: Cascade)
-// }
-
-// model Step {
-//   id      String   @id @default(uuid())
-//   content String   // The step description
-//   order   Int      // Step order in learning objective
-//   learningObjectiveId String
-//   learningObjective LearningObjective @relation(fields: [learningObjectiveId], references: [id], onDelete: Cascade)
-// }
