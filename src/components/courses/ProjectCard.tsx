@@ -1,6 +1,7 @@
 import { Play, ChevronDown, ChevronUp } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import GithubEvaluation from "./GithubEvaluation";
+import axios from "axios";
 
 interface ProjectCardProps {
   project: any;
@@ -10,6 +11,9 @@ interface ProjectCardProps {
 const ProjectCard = ({ project, onStartProject }: ProjectCardProps) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [activeTab, setActiveTab] = useState<string>("projects");
+  const [CourseOutcomes, setCourseOutcomes] = useState(false);
+  const [steps, setSteps] = useState<any[]>([]);
+  const [showCommitModal, setShowCommitModal] = useState(false);
 
   const getProjectStatus = (steps: any[]) => {
     if (!steps || steps.length === 0) return "Not Started";
@@ -18,32 +22,79 @@ const ProjectCard = ({ project, onStartProject }: ProjectCardProps) => {
       : "In Progress";
   };
 
-  const handleTabChange = (tab: string) => {
-    setActiveTab(tab);
-  };
+  useEffect(() => {
+    if (!project?.steps || project.steps.length === 0) {
+      setSteps([]);
+      return;
+    }
 
-  // Function to handle step status change
-  const handleStepStatusChange = (stepIndex: number) => {
-    const updatedSteps = project.steps.map((stepObj: any, index: number) => {
-      if (index === stepIndex) {
-        return {
-          ...stepObj,
-          status: stepObj.status === "completed" ? "in progress" : "completed",
-        };
+    const updatedSteps = project.steps.map((step: any, index: number) => {
+      if (index === 0 && step.status !== "completed") {
+        return { ...step, status: "in progress" };
       }
-      return stepObj;
+      return step;
     });
 
-    console.log(updatedSteps)
-    project.steps = updatedSteps;
+    setSteps(updatedSteps);
+  }, [project?.steps]);
+  const handleStepStatusChange = (stepIndex: number) => {
+    let updatedSteps = [...steps];
+  
+    if (updatedSteps[stepIndex].status === "not started") {
+      return; // Prevent manual setting of "in progress"
+    }
+  
+    // Toggle status for the selected step
+    if (updatedSteps[stepIndex].status === "in progress") {
+      updatedSteps[stepIndex].status = "completed";
+    } else if (updatedSteps[stepIndex].status === "completed") {
+      updatedSteps[stepIndex].status = "not started";
+  
+      // Reset all steps after the current one
+      for (let i = stepIndex + 1; i < updatedSteps.length; i++) {
+        updatedSteps[i].status = "not started";
+      }
+    }
+  
+    // Ensure only one "in progress" step exists, following the sequence
+    for (let i = 0; i < updatedSteps.length; i++) {
+      if (i === 0 || updatedSteps[i - 1].status === "completed") {
+        if (updatedSteps[i].status !== "completed") {
+          updatedSteps[i].status = "in progress"; // First "not completed" step becomes "in progress"
+          break;
+        }
+      } else {
+        updatedSteps[i].status = "not started"; // Prevent skipping
+      }
+    }
+  
+    setSteps(updatedSteps);
+  };
+  
+  
+  
+  
+
+  const handleCommit = async () => {
+    try {
+      await axios.patch("/api/query/project", {
+        projectId: project.id,
+        updatedFields: { steps },
+      });
+
+      alert("Steps successfully committed!");
+      setShowCommitModal(false);
+    } catch (error) {
+      console.error("Error committing steps:", error);
+      alert("Failed to commit steps.");
+    }
   };
 
   return (
     <div className="p-4 border rounded-lg bg-white shadow-sm relative">
-      {/* Sub-navbar */}
       <div className="flex space-x-4 mb-4">
         <button
-          onClick={() => handleTabChange("projects")}
+          onClick={() => setActiveTab("projects")}
           className={`px-4 py-2 rounded-lg font-medium ${
             activeTab === "projects"
               ? "bg-blue-600 text-white"
@@ -53,7 +104,7 @@ const ProjectCard = ({ project, onStartProject }: ProjectCardProps) => {
           Projects
         </button>
         <button
-          onClick={() => handleTabChange("github")}
+          onClick={() => setActiveTab("github")}
           className={`px-4 py-2 rounded-lg font-medium ${
             activeTab === "github"
               ? "bg-blue-600 text-white"
@@ -64,120 +115,143 @@ const ProjectCard = ({ project, onStartProject }: ProjectCardProps) => {
         </button>
       </div>
 
-      {/* Conditional Rendering */}
       {activeTab === "projects" ? (
         <>
-          {/* Start Project Button */}
           {!project.steps || project.steps.length === 0 ? (
             <button
               onClick={() => onStartProject(project.id)}
-              className="absolute -top-3 -right-3 px-4 py-2 bg-blue-600 text-white rounded-lg shadow-lg hover:bg-blue-700 transform hover:scale-105 transition-all duration-200 flex items-center gap-2"
+              className="absolute flex items-center justify-between -top-3 -right-3 px-4 py-2 bg-blue-600 text-white rounded-lg shadow-lg"
             >
               <Play size={16} /> Start Now
             </button>
           ) : (
-            <button
-              onClick={() => setIsExpanded(!isExpanded)}
-              className="absolute -top-3 -right-3 px-4 py-2 bg-blue-600 text-white rounded-lg shadow-lg hover:bg-blue-700 transform hover:scale-105 transition-all duration-200 flex items-center gap-2"
-            >
-              {/* Expand/Collapse Button */}
-              {isExpanded ? "Show Less" : "Show More"}{" "}
-              {isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-            </button>
-            // <p
-            //   className={`text-sm ${
-            //     getProjectStatus(project.steps) === 'Completed' ? 'text-green-600' : 'text-yellow-500'
-            //   }`}
-            // >
-            //   Status: {getProjectStatus(project.steps)}
-            // </p>
+            <div>
+              <button
+                onClick={() => setIsExpanded(!isExpanded)}
+                className="absolute flex items-center justify-between -top-3 -right-3 px-4 py-2 bg-blue-600 text-white rounded-lg shadow-lg"
+              >
+                {isExpanded ? "Show Less" : "Show More"}{" "}
+                {isExpanded ? (
+                  <ChevronUp size={16} />
+                ) : (
+                  <ChevronDown size={16} />
+                )}
+              </button>
+              <p
+                className={`text-sm ${
+                  getProjectStatus(steps) === "Completed"
+                    ? "text-green-600"
+                    : "text-yellow-500"
+                }`}
+              >
+                Status: {getProjectStatus(steps)}
+              </p>
+            </div>
           )}
 
-          {/* Title and Description */}
           <div className="space-y-2">
             <h5 className="text-lg font-semibold text-black">
               {project.title}
             </h5>
             <p className="text-gray-600">{project.description}</p>
           </div>
+          <p
+            onClick={() => setCourseOutcomes(!CourseOutcomes)}
+            className="text-blue-500 cursor-pointer"
+          >
+            Course Outcomes :-
+          </p>
+          {/* Learning Objectives */}
+          {CourseOutcomes && (
+            <div className="text-black">
+              <h6 className="font-semibold text-gray-700">
+                Learning Objectives:
+              </h6>
+              <ul className="list-disc list-inside space-y-1">
+                {project.learningObjectives.map(
+                  (objective: string, index: number) => (
+                    <li key={index}>- {objective}</li>
+                  )
+                )}
+              </ul>
+            </div>
+          )}
 
-          {/* Expandable Content */}
           {isExpanded && (
             <div className="space-y-2 mt-2">
-              {/* Learning Objectives */}
-              <div className="text-black">
-                <h6 className="font-semibold text-gray-700">
-                  Learning Objectives:
-                </h6>
-                <ul className="list-disc list-inside space-y-1">
-                  {project.learningObjectives.map(
-                    (objective: string, index: number) => (
-                      <li key={index}>- {objective}</li>
-                    )
-                  )}
-                </ul>
-              </div>
-
-              {/* Steps */}
-              {project.steps && project.steps.length > 0 && (
+              {steps.length > 0 && (
                 <div className="space-y-2">
                   <h6 className="text-md font-semibold text-gray-700">
                     Steps:
                   </h6>
                   <ul className="list-inside space-y-1">
-                    {project.steps.map((stepObj: any, index: number) => (
+                    {steps.map((stepObj: any, index: number) => (
                       <li key={index} className="flex items-start space-x-2">
-                        {/* Circular Checkbox */}
                         <input
                           type="checkbox"
                           checked={stepObj.status === "completed"}
                           onChange={() => handleStepStatusChange(index)}
-                          className="appearance-none w-4 h-4 border border-gray-400 rounded-full checked:bg-green-600 checked:border-green-600 cursor-pointer"
+                          className="appearance-none w-4 h-4 border border-gray-400 rounded-full checked:bg-green-600"
                         />
-
-                        {/* Step Title with Strikethrough */}
-                        <div>
-                          <span
-                            className={`text-sm ${
-                              stepObj.status === "completed"
-                                ? "line-through text-green-600"
-                                : stepObj.status === "in progress"
-                                ? "text-yellow-500"
-                                : "text-gray-700"
-                            }`}
-                          >
-                            {stepObj.step.stepTitle} -{" "}
-                            <span className="italic">{stepObj.status}</span>
-                          </span>
-
-                          {/* Resources */}
-                          <ul className="ml-10 space-y-1">
-                            {stepObj.step.resources.map(
-                              (resource: any, resourceIndex: number) => (
-                                <li key={resourceIndex}>
-                                  <a
-                                    href={resource.url}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="text-blue-500 hover:underline"
-                                  >
-                                    {resource.title}
-                                  </a>
-                                </li>
-                              )
-                            )}
-                          </ul>
-                        </div>
+                        <span
+                          className={`text-sm ${
+                            stepObj.status === "completed"
+                              ? "line-through text-green-600"
+                              : stepObj.status === "in progress"
+                              ? "text-yellow-500"
+                              : "text-gray-700"
+                          }`}
+                        >
+                          {stepObj.step.stepTitle} -{" "}
+                          <span className="italic">{stepObj.status}</span>
+                        </span>
                       </li>
                     ))}
                   </ul>
                 </div>
               )}
+
+              <button
+                onClick={() => setShowCommitModal(true)}
+                className="mt-4 px-4 py-2 bg-green-600 text-white rounded-lg shadow-lg hover:bg-green-700"
+              >
+                Commit Steps
+              </button>
+            </div>
+          )}
+
+          {showCommitModal && (
+            <div className="fixed inset-0 flex items-center justify-center bg-gray-900 bg-opacity-50">
+              <div className="bg-white p-6 rounded-lg shadow-lg w-96">
+                <h3 className="text-lg font-semibold text-black">Commit Changes</h3>
+                <ul className="mt-2 space-y-2">
+                  {steps.map((stepObj, index) => (
+                    <li key={index} className="flex justify-between">
+                      <span className="text-black">{stepObj.step.stepTitle}</span>
+                      <span className="font-semibold text-black">{stepObj.status}</span>
+                    </li>
+                  ))}
+                </ul>
+                <div className="mt-4 flex justify-end space-x-2">
+                  <button
+                    onClick={() => setShowCommitModal(false)}
+                    className="px-4 py-2 bg-gray-400 text-white rounded-lg"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleCommit}
+                    className="px-4 py-2 bg-blue-600 text-white rounded-lg"
+                  >
+                    Confirm & Commit
+                  </button>
+                </div>
+              </div>
             </div>
           )}
         </>
       ) : (
-        <GithubEvaluation project={project}/> // Render the GitHubEvaluation component
+        <GithubEvaluation project={project} />
       )}
     </div>
   );

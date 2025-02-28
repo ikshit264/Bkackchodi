@@ -23,7 +23,7 @@ const Page = () => {
         throw new Error("Failed to fetch course. Please try again later.");
       }
       return { status: "success", data: response.data.data };
-    } catch (err: any) {
+    } catch (err) { //kuch na lagu
       console.error("Error fetching course:", err.message);
       return { status: "error", error: err.message };
     } finally {

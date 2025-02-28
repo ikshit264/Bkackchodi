@@ -8,9 +8,7 @@ export const uploadCourse = async (title, description, batches) => {
       batches,
     });
 
-    if (response.status === 201) {
-      console.log("Course uploaded successfully!", response.data);
-    } else {
+    if (!(response.status === 201 || response.status === 200)) {
       const jsondata = await response.data;
       throw new Error(jsondata.message ?? jsondata.error);
     }

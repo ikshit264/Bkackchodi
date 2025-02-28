@@ -31,7 +31,8 @@ model Course {
   title     String
   userId    String
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  batch    Batch[]
+  batch     Batch[]
+  status    String   @default("not started") // e.g., "In Progress", "Completed", "Not Started"
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
@@ -42,6 +43,7 @@ model Batch {
   courseId  String
   course    Course    @relation(fields: [courseId], references: [id], onDelete: Cascade)
   projects  Project[]
+  status    String    @default("not started") // e.g., "In Progress", "Completed", "Not Started"
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
 }
@@ -51,12 +53,12 @@ model Project {
   title              String
   description        String
   level              String // e.g., Beginner, Intermediate, Advanced
-  status             String // e.g., "In Progress", "Completed", "Not Started"
+  status             String   @default("not started") // e.g., "In Progress", "Completed", "Not Started"
   batchId            String
   batch              Batch    @relation(fields: [batchId], references: [id], onDelete: Cascade)
   learningObjectives Json     @db.JsonB // Store nested objectives as JSON changes
-  steps              Json?     @db.JsonB // Stores all the steps but i is optional
-  GithubData         Json?     @db.JsonB // Store GitHub data
+  steps              Json?    @db.JsonB // Stores all the steps but i is optional
+  GithubData         Json?    @db.JsonB // Store GitHub data
   createdAt          DateTime @default(now())
   updatedAt          DateTime @updatedAt
 }

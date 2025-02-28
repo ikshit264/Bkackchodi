@@ -95,10 +95,11 @@ export async function POST(request: NextRequest) {
         title: project.title,
         description: project.description,
         level: project.level,
-        status: project.status || 'completed',
+        status: project.status || 'not started',
         batchId: batchRecord?.id,
         learningObjectives: project.learningObjectives || {},
         steps: project.steps || null,
+        GithubData: project.GithubData || null,
       }));
     });
 

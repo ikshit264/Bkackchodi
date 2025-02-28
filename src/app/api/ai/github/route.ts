@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
 import { StringOutputParser } from "@langchain/core/output_parsers";
 import { PROMPT_GITHUB } from "../../../../utils/prompt";
-import { GithubDataCollect } from "../../../../utils/GithubBackchodi";
+import { GithubDataCollect } from "../../../../utils/github/GithubBackchodi";
 
 const llm = new ChatGoogleGenerativeAI({
   model: "gemini-2.0-flash-001",
@@ -31,9 +31,12 @@ const chain = prompt.pipe(llm).pipe(outputParser);
 
 export async function POST(req: Request) {
   try {
-    const { owner, repo, topic, learning_objectives, steps } = await req.json();
+    const { id, owner, repo, topic, learning_objectives, steps } = await req.json();
 
-    const github_repo_commit_data = await GithubDataCollect(owner, repo);
+    const github_repo_commit_data = await GithubDataCollect(id, owner, repo);
+    if (github_repo_commit_data === undefined) {
+      return NextResponse.json({ error: "Failed to evaluate the repository." }, { status: 500 });
+    }
 
     const res = await chain.invoke({
       title : topic,
@@ -44,7 +47,7 @@ export async function POST(req: Request) {
 
     const { jsonObject, text } = separateJSONandText(res);
 
-    return NextResponse.json({ jsonObject, text });
+    return NextResponse.json({ jsonObject, text }, {status : 200});
 
   } catch (error) {
     console.error("Error:", error);

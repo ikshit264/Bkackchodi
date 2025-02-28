@@ -39,14 +39,33 @@ interface CommitData {
   data: string;
 }
 
+export async function GithubTokenExtract(UserId: string) {
+  const response = await fetch(
+    `https://api.clerk.dev/v1/users/${UserId}/oauth_access_tokens/oauth_github`,
+    {
+      headers: {
+        Authorization: `Bearer ${process.env.NEXT_PUBLIC_CLERK_SECRET_KEY}`,
+      },
+    }
+  );
+
+  if (!response.ok) {
+    throw new Error("Failed to fetch github token from Clerk");
+  }
+
+  const data = await response.json();
+
+  return data[0].token;
+}
+
 // API service for GitHub interactions
 class GitHubService {
   private headers: Record<string, string>;
 
   constructor(token: string) {
     this.headers = {
-      "Authorization": "token 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",
-      "Accept": "application/vnd.github.v3+json",
+      Authorization: `Bearer ${token}`,
+      Accept: "application/vnd.github.v3+json",
     };
   }
 
@@ -223,11 +242,14 @@ class GitHubService {
   }
 }
 
-const token = process.env.NEXT_PUBLIC_GITHUB_TOKEN; // Replace with your token
-
 // Example usage with async/await
-export async function GithubDataCollect(owner: string, repo: string) {
-    
+export async function GithubDataCollect(
+  userId: string,
+  owner: string,
+  repo: string
+) {
+  const token = await GithubTokenExtract(userId);
+
   const githubService = new GitHubService(token);
 
   try {

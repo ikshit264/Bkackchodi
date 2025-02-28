@@ -52,6 +52,7 @@ export async function GET(
               status: project.status,
               learningObjectives: project.learningObjectives,
               steps: project.steps,
+              GithubData: project.GithubData || null,
             })),
           })),
         },

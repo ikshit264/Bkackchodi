@@ -84,9 +84,7 @@ const AiCall = ({
         batches,
       });
 
-      if (response.status === 201) {
-        console.log("Course uploaded successfully!", response.data);
-      } else {
+      if (!(response.status === 201 || response.status === 200)) {
         setError(response.data.message || response.data.error);
       }
     } catch (err: any) {
@@ -110,7 +108,6 @@ const AiCall = ({
       }
   
       const data = response.data;
-      console.log("Full response data:", data);
   
       // Parse the jsonObject string into an actual object
       let parsedJson;
@@ -126,7 +123,6 @@ const AiCall = ({
         throw new Error("Invalid data format: Projects should be an array.");
       }
   
-      console.log("Processed projects array:", projects);
       const checkJson = validateJsonStructure(projects);
   
       if (checkJson.valid) {
