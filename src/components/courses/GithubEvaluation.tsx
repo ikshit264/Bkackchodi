@@ -5,6 +5,7 @@ import { Play } from "lucide-react";
 import axios from "axios";
 import { useUser } from "@clerk/nextjs";
 import yaml from "js-yaml";
+import CreateGithubProjectButton from "./GithubProjects";
 
 const GithubEvaluation = ({ project }) => {
   const { user } = useUser();
@@ -195,6 +196,7 @@ const GithubEvaluation = ({ project }) => {
           >
             <Play size={16} /> {loading ? "Generating..." : "Generate"}
           </button>
+          <CreateGithubProjectButton Batchid={project.batcId} userId={userId} projectid={project.id} stepIndex={project.position}/>
         </>
       )}
     </div>
