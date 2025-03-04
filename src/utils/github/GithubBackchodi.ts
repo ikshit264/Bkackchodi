@@ -54,7 +54,7 @@ export async function GithubTokenExtract(UserId: string) {
   }
 
   const data = await response.json();
-
+  console.log("data[0].token", data[0].token);
   return data[0].token;
 }
 

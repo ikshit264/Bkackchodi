@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
 import getPrismaClient from "../../../lib/prisma";
 import { GithubTokenExtract } from "../../../utils/github/GithubBackchodi";
+import { getOwnerId } from "../../../utils/github/GithubProjectBackchodi";
 
 const prisma = getPrismaClient();
 
@@ -36,22 +37,30 @@ export async function GET(request: Request) {
       );
     }
 
+    // console.log("clerkUser", clerkUser);
+
     const githubToken = await GithubTokenExtract(userId);
+
+    const githubId = clerkUser.username;
+
+    const githubOwnerid = await getOwnerId("user", githubId, githubToken);
 
     const dbUser = await prisma.user.upsert({
       where: { clerkId: userId },
       update: {
-        name: clerkUser.first_name || "",
-        lastName: clerkUser.last_name || "",
         email: clerkUser.email_addresses?.[0]?.email_address || "",
-        // githubToken : githubToken,
+        githubToken : githubToken,
+        githubOwnerid : githubOwnerid,
+        githubId : githubId,
       },
       create: {
         clerkId: userId,
         name: clerkUser.first_name || "",
         lastName: clerkUser.last_name || "",
         email: clerkUser.email_addresses?.[0]?.email_address || "",
-        // githubToken : githubToken,
+        githubToken : githubToken,
+        githubOwnerid : githubOwnerid,
+        githubId : githubId,
       },
       select: { id: true },
     });

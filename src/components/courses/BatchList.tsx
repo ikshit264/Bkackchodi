@@ -39,7 +39,7 @@ const BatchList = ({ batches, expandedBatch, onBatchToggle, onStartProject }: Ba
                   batch.projects.map((project) => (
                     <ProjectCard
                       key={project.id}
-                      project={project}
+                      project={{ ...project, batcId : batch.id }}
                       onStartProject={onStartProject}
                     />
                   ))

@@ -9,6 +9,7 @@ interface ProjectCardProps {
 }
 
 const ProjectCard = ({ project, onStartProject }: ProjectCardProps) => {
+  console.log(project);
   const [isExpanded, setIsExpanded] = useState(false);
   const [activeTab, setActiveTab] = useState<string>("projects");
   const [CourseOutcomes, setCourseOutcomes] = useState(false);
@@ -70,10 +71,6 @@ const ProjectCard = ({ project, onStartProject }: ProjectCardProps) => {
   
     setSteps(updatedSteps);
   };
-  
-  
-  
-  
 
   const handleCommit = async () => {
     try {

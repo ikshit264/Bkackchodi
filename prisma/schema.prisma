@@ -14,16 +14,18 @@ datasource db {
 }
 
 model User {
-  id        String   @id @default(uuid())
-  clerkId   String   @unique
-  githubId  String?  @unique // Storing GitHub ID to avoid duplicates
-  name      String
-  lastName  String
-  email     String   @unique
-  avatar    String? // GitHub profile picture URL
-  courses   Course[]
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id            String   @id @default(uuid())
+  clerkId       String   @unique
+  githubId      String?  @unique // Storing GitHub ID to avoid duplicates
+  githubOwnerid String?  @unique // Storing GitHub Owner ID to avoid duplicates
+  githubToken   String? // Storing GitHub token for user
+  name          String
+  lastName      String
+  email         String   @unique
+  avatar        String? // GitHub profile picture URL
+  courses       Course[]
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 }
 
 model Course {
@@ -38,27 +40,32 @@ model Course {
 }
 
 model Batch {
-  id        String    @id @default(uuid())
-  number    Int // Month number (1,2,3...)
-  courseId  String
-  course    Course    @relation(fields: [courseId], references: [id], onDelete: Cascade)
-  projects  Project[]
-  status    String    @default("not started") // e.g., "In Progress", "Completed", "Not Started"
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
+  id              String    @id @default(uuid())
+  number          Int // Month number (1,2,3...)
+  courseId        String
+  course          Course    @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  projects        Project[]
+  githubProjectId String? // Stores GitHub project ID
+  status          String    @default("not started") // e.g., "In Progress", "Completed", "Not Started"
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
 }
 
 model Project {
   id                 String   @id @default(uuid())
   title              String
+  githubRepo         Json?    @db.JsonB // Store GitHub repo details as JSON name, id;
   description        String
   level              String // e.g., Beginner, Intermediate, Advanced
   status             String   @default("not started") // e.g., "In Progress", "Completed", "Not Started"
   batchId            String
   batch              Batch    @relation(fields: [batchId], references: [id], onDelete: Cascade)
+  position           Int      @default(1) // Unique numbering for each project within a batch
   learningObjectives Json     @db.JsonB // Store nested objectives as JSON changes
-  steps              Json?    @db.JsonB // Stores all the steps but i is optional
+  steps              Json?    @db.JsonB // Stores all the steps but it is optional
   GithubData         Json?    @db.JsonB // Store GitHub data
   createdAt          DateTime @default(now())
   updatedAt          DateTime @updatedAt
+
+  @@unique([batchId, position]) // Ensures unique numbering within a batch
 }

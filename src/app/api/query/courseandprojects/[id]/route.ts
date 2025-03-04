@@ -47,6 +47,7 @@ export async function GET(
             projects: batch.projects.map((project) => ({
               id: project.id,
               title: project.title,
+              position : project.position,
               description: project.description,
               level: project.level,
               status: project.status,

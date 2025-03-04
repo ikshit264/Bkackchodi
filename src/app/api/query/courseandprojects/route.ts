@@ -91,8 +91,9 @@ export async function POST(request: NextRequest) {
       
       // console.log("batchRecord", batchRecord);
 
-      return batch.projects.map((project) => ({
+      return batch.projects.map((project, index) => ({
         title: project.title,
+        position : index,
         description: project.description,
         level: project.level,
         status: project.status || 'not started',
