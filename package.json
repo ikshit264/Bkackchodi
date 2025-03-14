@@ -17,6 +17,7 @@
     "ai": "^4.1.41",
     "axios": "^1.7.9",
     "date-fns": "^4.1.0",
+    "depcheck": "^1.4.7",
     "dotenv": "^16.4.7",
     "framer-motion": "^12.4.4",
     "icons-react": "^3.7.1",
