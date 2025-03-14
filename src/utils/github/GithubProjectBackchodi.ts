@@ -1,5 +1,7 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
 import axios, { AxiosError } from "axios";
-import { format } from 'date-fns';
+import { format } from "date-fns";
 import { GithubTokenExtract } from "./GithubBackchodi";
 
 const GITHUB_GRAPHQL_URL = "https://api.github.com/graphql";
@@ -45,9 +47,6 @@ export async function getOwnerId(
   const variables = { login: owner };
 
   try {
-    console.log(`Getting owner ID for ${ownerType} '${owner}'`);
-    console.log("Request data:", JSON.stringify({ query, variables }));
-
     const response = await axios.post(
       GITHUB_GRAPHQL_URL,
       { query, variables },
@@ -59,8 +58,6 @@ export async function getOwnerId(
       }
     );
 
-    console.log("Owner ID API response:", JSON.stringify(response.data));
-
     const responseData = response.data;
 
     if (responseData.errors) {
@@ -69,13 +66,11 @@ export async function getOwnerId(
     }
 
     const ownerId = responseData.data?.[ownerType]?.id;
-    
+
     if (!ownerId) {
       console.error(`No ID found for ${ownerType} '${owner}'`);
       return null;
     }
-    
-    console.log(`Owner ID retrieved: ${ownerId}`);
 
     return ownerId;
   } catch (error) {
@@ -89,7 +84,11 @@ function handleAxiosError(error: unknown, prefix: string = "Error"): void {
   if (axios.isAxiosError(error)) {
     const axiosError = error as AxiosError;
     if (axiosError.response) {
-      console.error(`${prefix}: ${axiosError.response.status} - ${JSON.stringify(axiosError.response.data)}`);
+      console.error(
+        `${prefix}: ${axiosError.response.status} - ${JSON.stringify(
+          axiosError.response.data
+        )}`
+      );
     } else if (axiosError.request) {
       console.error(`${prefix}: No response received`, axiosError.request);
     } else {
@@ -121,11 +120,11 @@ interface IssueData {
   labels?: string[];
 }
 
-interface ApiResult<T> {
-  success: boolean;
-  data?: T;
-  error?: string;
-}
+// interface ApiResult<T> {
+//   success: boolean;
+//   data?: T;
+//   error?: string;
+// }
 
 class GithubProject {
   ownerType: "user" | "organization";
@@ -142,9 +141,11 @@ class GithubProject {
     if (!owner) throw new Error("Owner name is required");
     if (!githubToken) throw new Error("GitHub token is required");
     if (!["user", "organization"].includes(ownerType)) {
-      throw new Error(`Invalid owner type: ${ownerType}. Must be 'user' or 'organization'`);
+      throw new Error(
+        `Invalid owner type: ${ownerType}. Must be 'user' or 'organization'`
+      );
     }
-    
+
     this.ownerType = ownerType;
     this.owner = owner;
     this.githubToken = githubToken;
@@ -173,17 +174,17 @@ class GithubProject {
       console.error("Issue title is required");
       return null;
     }
-    
+
     if (!body) {
       console.error("Issue body is required");
       return null;
     }
-    
+
     if (!repo) {
       console.error("Repository name is required");
       return null;
     }
-    
+
     if (!owner) {
       console.error("Owner name is required");
       return null;
@@ -191,7 +192,7 @@ class GithubProject {
 
     const url = `${this.GITHUB_REST_API_URL}/repos/${owner}/${repo}/issues`;
     const headers = this.getHeaders();
-    
+
     const data: IssueData = {
       title: title,
       body: body,
@@ -201,11 +202,8 @@ class GithubProject {
       data.labels = [label];
     }
 
-    console.log(`Creating issue in ${owner}/${repo}:`, JSON.stringify(data));
-
     try {
       const response = await axios.post(url, data, { headers });
-      console.log("Create issue API response:", JSON.stringify(response.data));
 
       if (response.status !== 201) {
         console.error(`Failed to create issue. Status: ${response.status}`);
@@ -232,8 +230,6 @@ class GithubProject {
       return null;
     }
 
-    console.log(`Creating project "${title}" for owner ID: ${ownerId}`);
-
     const query = `mutation($ownerId: ID!, $title: String!) {
       createProjectV2(input: {ownerId: $ownerId, title: $title}) {
         projectV2 {
@@ -252,19 +248,13 @@ class GithubProject {
 
     const requestData = {
       query,
-      variables
+      variables,
     };
 
-    console.log("Create project request data:", JSON.stringify(requestData));
-
     try {
-      const response = await axios.post(
-        this.GITHUB_GRAPHQL_URL,
-        requestData,
-        { headers: this.getHeaders() }
-      );
-
-      console.log("Create project API response:", JSON.stringify(response.data));
+      const response = await axios.post(this.GITHUB_GRAPHQL_URL, requestData, {
+        headers: this.getHeaders(),
+      });
 
       const responseData = response.data;
 
@@ -274,13 +264,12 @@ class GithubProject {
       }
 
       const projectId = responseData.data?.createProjectV2?.projectV2?.id;
-      
+
       if (!projectId) {
         console.error("Project ID not found in response");
         return null;
       }
 
-      console.log(`Project created with ID: ${projectId}`);
       return projectId;
     } catch (error) {
       handleAxiosError(error, "Error creating project");
@@ -333,17 +322,10 @@ class GithubProject {
     const variables = { projectId };
     const requestData = { query, variables };
 
-    console.log(`Getting project details for project ID: ${projectId}`);
-    console.log("Request data:", JSON.stringify(requestData));
-
     try {
-      const response = await axios.post(
-        this.GITHUB_GRAPHQL_URL,
-        requestData,
-        { headers: this.getHeaders() }
-      );
-
-      console.log("Get project details API response:", JSON.stringify(response.data));
+      const response = await axios.post(this.GITHUB_GRAPHQL_URL, requestData, {
+        headers: this.getHeaders(),
+      });
 
       const responseData = response.data;
 
@@ -364,160 +346,165 @@ class GithubProject {
     }
   }
 
-  async createStatusField(projectId: string): Promise<[string | null, string | null]> {
+  async createStatusField(
+    projectId: string
+  ): Promise<{
+    fieldId: string | null;
+    options: { id: string; name: string }[] | null;
+  }> {
     if (!projectId) {
       console.error("Project ID is required");
-      return [null, null];
+      return { fieldId: null, options: null };
     }
 
-    console.log(`Creating Status field for project ID: ${projectId}`);
-
     const query = `mutation($projectId: ID!) {
-      createProjectV2Field(input: {
-        projectId: $projectId,
-        dataType: SINGLE_SELECT,
-        name: "Status",
-        singleSelectOptions: [
-          {name: "Todo", color: "BLUE"},
-          {name: "In Progress", color: "YELLOW"},
-          {name: "Done", color: "GREEN"}
-        ]
-      }) {
-        projectV2Field {
-          ... on ProjectV2SingleSelectField {
+    createProjectV2Field(input: {
+      projectId: $projectId,
+      dataType: SINGLE_SELECT,
+      name: "Status",
+      singleSelectOptions: [
+        {name: "Todo", color: "BLUE"},
+        {name: "In Progress", color: "YELLOW"},
+        {name: "Done", color: "GREEN"}
+      ]
+    }) {
+      projectV2Field {
+        ... on ProjectV2SingleSelectField {
+          id
+          name
+          options {
             id
             name
-            options {
-              id
-              name
-            }
           }
         }
       }
-    }`;
-    
+    }
+  }`;
+
     const variables = { projectId };
     const requestData = { query, variables };
 
-    console.log("Create status field request data:", JSON.stringify(requestData));
-
     try {
-      const response = await axios.post(
-        this.GITHUB_GRAPHQL_URL,
-        requestData,
-        { headers: this.getHeaders() }
-      );
-
-      console.log("Create status field API response:", JSON.stringify(response.data));
+      const response = await axios.post(this.GITHUB_GRAPHQL_URL, requestData, {
+        headers: this.getHeaders(),
+      });
 
       const responseData = response.data;
 
       if (responseData.errors) {
         console.error("Failed to create status field:", responseData.errors);
-        return [null, null];
+        return { fieldId: null, options: null };
       }
+
+      console.log("Response of fields created", responseData);
 
       const fieldData = responseData.data?.createProjectV2Field?.projectV2Field;
-      
+
       if (!fieldData) {
         console.error("Field data not found in response");
-        return [null, null];
+        return { fieldId: null, options: null };
       }
-      
+
       const fieldId = fieldData.id;
-      const todoOptionId = fieldData.options?.find((option: any) => option.name === "Todo")?.id || null;
+      const options =
+        fieldData.options?.map((option: any) => ({
+          id: option.id,
+          name: option.name,
+        })) || null;
 
-      if (!todoOptionId) {
-        console.error("Todo option ID not found in response");
-      }
-
-      console.log(`Status field created with ID: ${fieldId}, Todo option ID: ${todoOptionId}`);
-      return [fieldId, todoOptionId];
+      return { fieldId, options };
     } catch (error) {
       handleAxiosError(error, "Error creating status field");
-      return [null, null];
+      return { fieldId: null, options: null };
     }
   }
 
-  async addIssueToProject(issueId: string, projectId: string): Promise<boolean> {
+  async addIssueToProject(
+    issueId: string,
+    projectId: string
+  ): Promise<string | null> {
     if (!issueId) {
       console.error("Issue ID is required");
-      return false;
+      return null;
     }
-    
+
     if (!projectId) {
       console.error("Project ID is required");
-      return false;
+      return null;
     }
 
-    console.log(`Adding issue ${issueId} to project ${projectId}`);
-
     const query = `mutation($projectId: ID!, $contentId: ID!) {
-      addProjectV2ItemById(input: {projectId: $projectId, contentId: $contentId}) {
-        item {
-          id
-        }
+    addProjectV2ItemById(input: {projectId: $projectId, contentId: $contentId}) {
+      item {
+        id
       }
-    }`;
-    
+    }
+  }`;
+
     const variables = { projectId, contentId: issueId };
     const requestData = { query, variables };
 
-    console.log("Add issue to project request data:", JSON.stringify(requestData));
-
     try {
-      const response = await axios.post(
-        this.GITHUB_GRAPHQL_URL,
-        requestData,
-        { headers: this.getHeaders() }
-      );
-
-      console.log("Add issue to project API response:", JSON.stringify(response.data));
+      const response = await axios.post(this.GITHUB_GRAPHQL_URL, requestData, {
+        headers: this.getHeaders(),
+      });
 
       const responseData = response.data;
 
       if (responseData.errors) {
         console.error("Failed to add issue to project:", responseData.errors);
-        return false;
+        return null;
       }
 
       const itemId = responseData.data?.addProjectV2ItemById?.item?.id;
-      
+
       if (!itemId) {
         console.error("Item ID not found in response");
-        return false;
+        return null;
       }
 
-      console.log(`Issue added to project as item ${itemId}. Setting status to Todo...`);
-
       // Get or create Status field and Todo option
-      const [statusFieldId, todoOptionId] = await this.getOrCreateStatusFieldId(projectId);
+      const { fieldId: statusFieldId, options } =
+        await this.getOrCreateStatusFieldId(projectId);
+
+      const todoOptionId =
+        options?.find((option) => option.name === "Todo")?.id || null;
 
       if (!statusFieldId || !todoOptionId) {
         console.error("Failed to get or create Status field");
-        return false;
+        return null;
       }
 
       // Set status to Todo
-      return await this.setItemStatus(projectId, itemId, statusFieldId, todoOptionId);
+      const statusUpdated = await this.setItemStatus(
+        projectId,
+        itemId,
+        statusFieldId,
+        todoOptionId
+      );
+
+      return statusUpdated ? itemId : null;
     } catch (error) {
       handleAxiosError(error, "Error adding issue to project");
-      return false;
+      return null;
     }
   }
 
-  async setItemStatus(projectId: string, itemId: string, fieldId: string, optionId: string): Promise<boolean> {
+  async setItemStatus(
+    projectId: string,
+    itemId: string,
+    fieldId: string,
+    optionId: string
+  ): Promise<boolean> {
     if (!projectId || !itemId || !fieldId || !optionId) {
-      console.error("Missing required parameters for setItemStatus:", { 
-        projectId: !!projectId, 
-        itemId: !!itemId, 
-        fieldId: !!fieldId, 
-        optionId: !!optionId 
+      console.error("Missing required parameters for setItemStatus:", {
+        projectId: !!projectId,
+        itemId: !!itemId,
+        fieldId: !!fieldId,
+        optionId: !!optionId,
       });
       return false;
     }
-    
-    console.log(`Setting item ${itemId} status to option ${optionId}`);
 
     const query = `mutation($projectId: ID!, $itemId: ID!, $fieldId: ID!, $optionId: String!) {
       updateProjectV2ItemFieldValue(input: {
@@ -531,34 +518,31 @@ class GithubProject {
         }
       }
     }`;
-    
+
     const variables = { projectId, itemId, fieldId, optionId };
     const requestData = { query, variables };
 
-    console.log("Set item status request data:", JSON.stringify(requestData));
-
     try {
-      const response = await axios.post(
-        this.GITHUB_GRAPHQL_URL,
-        requestData,
-        { headers: this.getHeaders() }
-      );
-
-      console.log("Set item status API response:", JSON.stringify(response.data));
+      const response = await axios.post(this.GITHUB_GRAPHQL_URL, requestData, {
+        headers: this.getHeaders(),
+      });
 
       const responseData = response.data;
+
+      console.log("Response Item issue update", responseData);
 
       if (responseData.errors) {
         console.error("Failed to update status field:", responseData.errors);
         return false;
       }
 
-      if (!responseData.data?.updateProjectV2ItemFieldValue?.projectV2Item?.id) {
+      if (
+        !responseData.data?.updateProjectV2ItemFieldValue?.projectV2Item?.id
+      ) {
         console.error("Updated item ID not found in response");
         return false;
       }
 
-      console.log(`Successfully set item ${itemId} status to option ${optionId}`);
       return true;
     } catch (error) {
       handleAxiosError(error, "Error setting item status");
@@ -566,49 +550,43 @@ class GithubProject {
     }
   }
 
-  async getOrCreateStatusFieldId(projectId: string): Promise<[string | null, string | null]> {
+  async getOrCreateStatusFieldId(
+    projectId: string
+  ): Promise<{
+    fieldId: string | null;
+    options: { id: string; name: string }[] | null;
+  }> {
     if (!projectId) {
       console.error("Project ID is required for getOrCreateStatusFieldId");
-      return [null, null];
+      return { fieldId: null, options: null };
     }
-    
-    console.log(`Getting or creating Status field for project ${projectId}`);
 
     const projectDetails = await this.getProjectDetails(projectId);
     if (!projectDetails) {
-        console.error("Failed to get project details");
-        return [null, null];
+      console.error("Failed to get project details");
+      return { fieldId: null, options: null };
     }
-    
+
     const fields = projectDetails.fields.nodes;
-    const statusField = fields.find((field) => field.name === "Status" && field.dataType === "SINGLE_SELECT");
-    
+    const statusField = fields.find(
+      (field) => field.name === "Status" && field.dataType === "SINGLE_SELECT"
+    );
+
     if (statusField) {
-        console.log(`Found existing Status field: ${statusField.id}`);
-        
-        let todoOptionId: string | null = null;
-        if (statusField.options && Array.isArray(statusField.options)) {
-            for (const option of statusField.options) {
-                const optionName = option.name.toLowerCase();
-                if (["todo", "to do", "to-do"].includes(optionName)) {
-                    todoOptionId = option.id;
-                    console.log(`Found Todo option: ${option.name} (ID: ${todoOptionId})`);
-                    break;
-                }
-            }
-        } else {
-            console.error("Status field options array is missing or not an array");
-        }
-        
-        if (!todoOptionId) {
-            console.warn("Status field exists but no Todo option found");
-            console.log("Available options: " + (statusField.options || []).map((o) => o.name).join(", "));
-        }
-        
-        return [statusField.id, todoOptionId];
+      const options =
+        statusField.options?.map((option: any) => ({
+          id: option.id,
+          name: option.name,
+        })) || null;
+
+      if (!options || options.length === 0) {
+        console.warn("Status field exists but no valid options found");
+      }
+
+      return { fieldId: statusField.id, options };
     }
-    
-    console.log("Status field not found. Creating a new one.");
+
+    // If the field doesn't exist, create it
     return await this.createStatusField(projectId);
   }
 }
@@ -618,22 +596,22 @@ export interface ProjectWithIssueResult {
   projectId?: string;
   issueNumber?: number;
   issueId?: string;
+  itemId?: string; // Add this line
   error?: string;
 }
 
 export interface ProjectWithIssueParams {
   owner: string;
-  userId : string;
+  userId: string;
   repoName: string;
   githubToken?: string;
-  ownerType?: 'user' | 'organization';
+  ownerType?: "user" | "organization";
   projectId?: string | null;
   projectTitle?: string | null;
   issueTitle?: string | null;
   issueBody?: string;
   issueLabel?: string;
 }
-
 
 /**
  * Example usage of the GitHub Project API
@@ -648,54 +626,30 @@ export async function createProjectWithIssue({
   userId,
   repoName,
   ownerType = 'user',
-  projectId = null,
-  projectTitle = null,
-  issueTitle = null,
-  issueBody = 'This is an issue created via the GitHub API',
-  issueLabel = 'bug'
+  projectId,
+  issueTitle,
+  issueBody,
+  issueLabel
 }: ProjectWithIssueParams): Promise<ProjectWithIssueResult> {
-  // Check required parameters
   if (!owner) {
     console.error('Missing required parameter: owner is required');
     return { success: false, error: 'Owner is required' };
   }
 
-    const githubToken = await GithubTokenExtract(userId);
-  
+  const githubToken = await GithubTokenExtract(userId);
+
   if (!repoName) {
     console.error('Missing required parameter: repoName is required');
     return { success: false, error: 'Repository name is required' };
   }
 
-  console.log('Starting GitHub workflow...');
-  
   try {
-    // Initialize GitHub project client
     const githubProject = new GithubProject(ownerType, owner, githubToken);
-    
-    // Generate timestamp for default titles
     const timestamp = format(new Date(), 'yyyy-MM-dd HH:mm:ss');
-    let result: ProjectWithIssueResult = { success: false };
+    const result: ProjectWithIssueResult = { success: false };
     
     // Step 1: Get or create project
-    if (!projectId) {
-      // Create a new project if projectId not provided
-      const actualProjectTitle = projectTitle || `Project (${timestamp})`;
-      console.log(`Creating new project: "${actualProjectTitle}"`);
-      
-      projectId = await githubProject.createProject(actualProjectTitle);
-      
-      if (!projectId) {
-        console.error('Failed to create project. Exiting.');
-        return { success: false, error: 'Failed to create project' };
-      }
-      
-      console.log(`Project created with ID: ${projectId}`);
-      result.projectId = projectId;
-    } else {
-      console.log(`Using existing project with ID: ${projectId}`);
-      result.projectId = projectId;
-    }
+    result.projectId = projectId;
     
     // Step 2: Create a new issue
     const actualIssueTitle = issueTitle || `Issue (${timestamp})`;
@@ -730,12 +684,12 @@ export async function createProjectWithIssue({
     // Step 3: Add the issue to the project with Todo status
     console.log(`Adding issue to project...`);
     
-    const success = await githubProject.addIssueToProject(issueNodeId, projectId);
+    const itemId = await githubProject.addIssueToProject(issueNodeId, projectId);
     
-    if (success) {
+    if (itemId) {
       console.log('Operation completed successfully!');
-      console.log(`Issue #${issueData.number} added to project ID ${projectId}`);
-      return { ...result, success: true };
+      console.log(`Issue #${issueData.number} added to project ID ${projectId} with item ID ${itemId}`);
+      return { ...result, success: true, itemId };
     } else {
       console.error('Failed to add issue to project.');
       return { ...result, success: false, error: 'Failed to add issue to project' };
@@ -749,6 +703,86 @@ export async function createProjectWithIssue({
       projectId: projectId || undefined
     };
   }
+}
+export async function CreateProject(
+  owner: string,
+  userId: string,
+  ownerType: "user" | "organization" = "user",
+  projectTitle: string | null = null
+) {
+  const actualProjectTitle = projectTitle;
+  const githubToken = await GithubTokenExtract(userId);
+  const githubProject = new GithubProject(ownerType, owner, githubToken);
+  const projectId = await githubProject.createProject(actualProjectTitle);
+  if (!projectId) {
+    console.error("Failed to create project. Exiting.");
+    return { success: false, error: "Failed to create project" };
+  }
+  return projectId;
+}
+
+export async function UpdateIssues(
+  projectId: string,
+  issues: { issueId: string; itemId : string; status: string }[], // Accepts an array of issues with statuses
+  userId: string,
+  owner: string
+) {
+  // Fetch GitHub Token
+  const githubToken = await GithubTokenExtract(userId);
+  const githubProject = new GithubProject("user", owner, githubToken);
+
+  // Get Status Field IDs
+  const { fieldId: statusFieldId, options } =
+    await githubProject.getOrCreateStatusFieldId(projectId);
+  const todoOptionId =
+    options?.find((option) => option.name === "Todo")?.id || null;
+  const inProgressOptionId =
+    options?.find((option) => option.name === "In Progress")?.id || null;
+  const doneOptionId =
+    options?.find((option) => option.name === "Done")?.id || null;
+  console.log(
+    "todoOptionId, inProgressOptionId, doneOptionId",
+    todoOptionId,
+    inProgressOptionId,
+    doneOptionId
+  );
+
+  if (!statusFieldId) {
+    console.error("Status field ID not found");
+    return;
+  }
+
+  console.log({issues});
+
+  // Iterate over each issue and update its status
+  for (const { issueId, status, itemId } of issues) {
+    const statusOptionId =
+      status === "not started"
+        ? todoOptionId
+        : status === "in progress"
+        ? inProgressOptionId
+        : status === "completed"
+        ? doneOptionId
+        : null;
+
+    if (statusOptionId === null) {
+      console.error(`Invalid status provided for issue ${issueId}`);
+      continue;
+    }
+
+    const updatedStatus = await githubProject.setItemStatus(
+      projectId,
+      itemId,
+      statusFieldId,
+      statusOptionId,
+    );
+
+    if (!updatedStatus) {
+      console.error(`Status not updated for issue ${issueId}`);
+    }
+  }
+
+  return true;
 }
 
 export default GithubProject;

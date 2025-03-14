@@ -4,7 +4,7 @@ import getPrismaClient from "../../../../../lib/prisma";
 
 const prisma = getPrismaClient();
 
-export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(req: NextRequest, { params }) {
   const { userId } = await auth();
 
   if (!userId) {

@@ -2,8 +2,6 @@
 
 import React, { useState } from "react";
 import axios from "axios";
-import { MultiStepLoader } from "../ui/multi-step-loader";
-import { test } from "../../outputs/test";
 import { validateJsonStructure } from "../../utils/JsonChecker";
 
 interface Project {
@@ -21,39 +19,32 @@ interface Batch {
   projects: Project[];
 }
 
-interface CourseData {
-  title: string;
-  description: string;
-  batches: Batch[];
-}
 
 const AiCall = ({
   onOutputChange,
   onMetadataChange,
 }: {
   onOutputChange: (data: Batch[]) => void;
-  onMetadataChange: (data: any) => void;
+  onMetadataChange: (data) => void;
 }) => {
   const [prompt, setPrompt] = useState("");
   const [timeDuration, setTimeDuration] = useState("");
   const [loading, setLoading] = useState(false);
-  const [conditionalVariable, setConditionalVariable] = useState(false);
   const [error, setError] = useState("");
 
-  const loadingStates = [
-    { text: "Initializing AI model..." },
-    { text: "Processing your prompt..." },
-    { text: "Analyzing time duration..." },
-    { text: "Generating response..." },
-    { text: "Formatting output..." },
-    { text: "Verifying data integrity..." },
-    { text: "Complete!" },
-  ];
+  // const loadingStates = [
+  //   { text: "Initializing AI model..." },
+  //   { text: "Processing your prompt..." },
+  //   { text: "Analyzing time duration..." },
+  //   { text: "Generating response..." },
+  //   { text: "Formatting output..." },
+  //   { text: "Verifying data integrity..." },
+  //   { text: "Complete!" },
+  // ];
 
-  const handleComplete = () => {
-    setLoading(false);
-    setConditionalVariable(false);
-  };
+  // const handleComplete = () => {
+  //   setLoading(false);
+  // };
 
   function filterByBatches(projects: Project[]): Batch[] {
     const batches: Record<number, Batch> = {};
@@ -87,7 +78,7 @@ const AiCall = ({
       if (!(response.status === 201 || response.status === 200)) {
         setError(response.data.message || response.data.error);
       }
-    } catch (err: any) {
+    } catch (err) {
       console.error("Error uploading course:", err);
       setError("Failed to upload course data.");
     }
@@ -113,8 +104,8 @@ const AiCall = ({
       let parsedJson;
       try {
         parsedJson = JSON.parse(data.jsonObject);
-      } catch (parseError) {
-        throw new Error("Invalid JSON format received from API.");
+      } catch (error) {
+        throw new Error("Invalid JSON format received from API.", error);
       }
   
       const projects = parsedJson?.projects;
@@ -126,7 +117,6 @@ const AiCall = ({
       const checkJson = validateJsonStructure(projects);
   
       if (checkJson.valid) {
-        setConditionalVariable(true);
   
         const sortedBatches = filterByBatches(projects);
         onOutputChange(sortedBatches);

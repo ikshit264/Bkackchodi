@@ -1,3 +1,7 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
+
 import axios from "axios";
 import { GithubTokenExtract } from "./GithubBackchodi";
 
@@ -69,6 +73,7 @@ class GitHubRepositoryAnalyzer {
 
       return foundFiles;
     } catch (error) {
+      console.log("error at QL", error);
       return [];
     }
   }

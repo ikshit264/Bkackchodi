@@ -2,13 +2,9 @@ const OutputDisplay = ({
   output,
   metadata,
 }: {
-  output: any;
-  metadata: any;
+  output,
+  metadata
 }) => {
-
-  const FilterByBatch = () =>{
-    
-  }
 
   return (
     <div className="mt-4 w-full max-w-4xl flex flex-col gap-4">

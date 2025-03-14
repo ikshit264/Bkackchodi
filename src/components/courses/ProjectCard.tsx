@@ -2,21 +2,37 @@ import { Play, ChevronDown, ChevronUp } from "lucide-react";
 import { useState, useEffect } from "react";
 import GithubEvaluation from "./GithubEvaluation";
 import axios from "axios";
+import { UserId as fetchUserId } from "../../utils/userId";
+interface Step {
+  stepTitle: string;
+  status: "not started" | "in progress" | "completed";
+  issueId?: string;
+  itemId?: string;
+}
+
+export interface Project {
+  id: string;
+  title: string;
+  description: string;
+  steps: Step[];
+  learningObjectives: string[];
+  batchId?: string;
+}
 
 interface ProjectCardProps {
-  project: any;
+  project: Project;
   onStartProject: (projectId: string) => void;
 }
 
 const ProjectCard = ({ project, onStartProject }: ProjectCardProps) => {
-  console.log(project);
   const [isExpanded, setIsExpanded] = useState(false);
   const [activeTab, setActiveTab] = useState<string>("projects");
   const [CourseOutcomes, setCourseOutcomes] = useState(false);
-  const [steps, setSteps] = useState<any[]>([]);
+  const [steps, setSteps] = useState<Step[]>([]);
   const [showCommitModal, setShowCommitModal] = useState(false);
+  const userId = fetchUserId();
 
-  const getProjectStatus = (steps: any[]) => {
+  const getProjectStatus = (steps: Step[]) => {
     if (!steps || steps.length === 0) return "Not Started";
     return steps.every((s) => s.status === "completed")
       ? "Completed"
@@ -29,7 +45,7 @@ const ProjectCard = ({ project, onStartProject }: ProjectCardProps) => {
       return;
     }
 
-    const updatedSteps = project.steps.map((step: any, index: number) => {
+    const updatedSteps : Step[] = project.steps.map((step: Step, index: number) => {
       if (index === 0 && step.status !== "completed") {
         return { ...step, status: "in progress" };
       }
@@ -38,25 +54,26 @@ const ProjectCard = ({ project, onStartProject }: ProjectCardProps) => {
 
     setSteps(updatedSteps);
   }, [project?.steps]);
+
   const handleStepStatusChange = (stepIndex: number) => {
-    let updatedSteps = [...steps];
-  
+    const updatedSteps = [...steps];
+
     if (updatedSteps[stepIndex].status === "not started") {
       return; // Prevent manual setting of "in progress"
     }
-  
+
     // Toggle status for the selected step
     if (updatedSteps[stepIndex].status === "in progress") {
       updatedSteps[stepIndex].status = "completed";
     } else if (updatedSteps[stepIndex].status === "completed") {
       updatedSteps[stepIndex].status = "not started";
-  
+
       // Reset all steps after the current one
       for (let i = stepIndex + 1; i < updatedSteps.length; i++) {
         updatedSteps[i].status = "not started";
       }
     }
-  
+
     // Ensure only one "in progress" step exists, following the sequence
     for (let i = 0; i < updatedSteps.length; i++) {
       if (i === 0 || updatedSteps[i - 1].status === "completed") {
@@ -68,16 +85,29 @@ const ProjectCard = ({ project, onStartProject }: ProjectCardProps) => {
         updatedSteps[i].status = "not started"; // Prevent skipping
       }
     }
-  
+
     setSteps(updatedSteps);
   };
 
   const handleCommit = async () => {
     try {
-      await axios.patch("/api/query/project", {
+      const response = await axios.patch("/api/query/project", {
         projectId: project.id,
         updatedFields: { steps },
       });
+
+      const data = await response.data;
+
+      const issueIdandStatus = data.project.steps.map(
+        (step) =>
+          step.issueId && {
+            status: step.status,
+            issueId: step.issueId,
+            itemId : step.itemId,
+          }
+      );
+
+      await handleProjectIssueUpdate(issueIdandStatus, 'ikshit004');
 
       alert("Steps successfully committed!");
       setShowCommitModal(false);
@@ -85,6 +115,36 @@ const ProjectCard = ({ project, onStartProject }: ProjectCardProps) => {
       console.error("Error committing steps:", error);
       alert("Failed to commit steps.");
     }
+  };
+
+  const handleProjectIssueUpdate = async (
+    issues: { issueId: string; status: string, itemId : string }[],
+    owner: string = "ikshit004"
+  ) => {
+    try {
+      const response = await axios.post("/api/ai/github/projects/issue", {
+        userId,
+        owner,
+        issues,
+        batchId: project.batchId,
+      });
+
+      if (response.status === 200) {
+        console.log("Issues updated successfully:", response.data);
+        return response.data; // Optional: return response if needed
+      } else {
+        console.error("Failed to update issues:", response.statusText);
+      }
+    } catch (error) {
+      console.error("Error updating project issues:", error);
+    }
+  };
+
+  const handleStartNow = async (id: string) => {
+    try {
+      onStartProject(id);
+
+    } catch (error) {console.log(error)}
   };
 
   return (
@@ -116,7 +176,7 @@ const ProjectCard = ({ project, onStartProject }: ProjectCardProps) => {
         <>
           {!project.steps || project.steps.length === 0 ? (
             <button
-              onClick={() => onStartProject(project.id)}
+              onClick={() => handleStartNow(project.id)}
               className="absolute flex items-center justify-between -top-3 -right-3 px-4 py-2 bg-blue-600 text-white rounded-lg shadow-lg"
             >
               <Play size={16} /> Start Now
@@ -182,7 +242,7 @@ const ProjectCard = ({ project, onStartProject }: ProjectCardProps) => {
                     Steps:
                   </h6>
                   <ul className="list-inside space-y-1">
-                    {steps.map((stepObj: any, index: number) => (
+                    {steps.map((stepObj, index: number) => (
                       <li key={index} className="flex items-start space-x-2">
                         <input
                           type="checkbox"
@@ -199,7 +259,7 @@ const ProjectCard = ({ project, onStartProject }: ProjectCardProps) => {
                               : "text-gray-700"
                           }`}
                         >
-                          {stepObj.step.stepTitle} -{" "}
+                          {stepObj.stepTitle} -{" "}
                           <span className="italic">{stepObj.status}</span>
                         </span>
                       </li>
@@ -220,12 +280,18 @@ const ProjectCard = ({ project, onStartProject }: ProjectCardProps) => {
           {showCommitModal && (
             <div className="fixed inset-0 flex items-center justify-center bg-gray-900 bg-opacity-50">
               <div className="bg-white p-6 rounded-lg shadow-lg w-96">
-                <h3 className="text-lg font-semibold text-black">Commit Changes</h3>
+                <h3 className="text-lg font-semibold text-black">
+                  Commit Changes
+                </h3>
                 <ul className="mt-2 space-y-2">
                   {steps.map((stepObj, index) => (
                     <li key={index} className="flex justify-between">
-                      <span className="text-black">{stepObj.step.stepTitle}</span>
-                      <span className="font-semibold text-black">{stepObj.status}</span>
+                      <span className="text-black">
+                        {stepObj.stepTitle}
+                      </span>
+                      <span className="font-semibold text-black">
+                        {stepObj.status}
+                      </span>
                     </li>
                   ))}
                 </ul>

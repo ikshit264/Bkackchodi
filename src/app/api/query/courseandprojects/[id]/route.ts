@@ -5,7 +5,7 @@ const prisma = getPrismaClient();
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }
 ) {
   const {id} = await params
 

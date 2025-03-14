@@ -1,7 +1,5 @@
 import { PrismaClient } from "@prisma/client";
 
-let prisma;
-
 const getPrismaClient = () => {
   if (process.env.NODE_ENV === "production") {
     // Create a new instance in production
