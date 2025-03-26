@@ -1,5 +1,3 @@
-each batch will be like a accordian
-expand and will show all the projects inside it 
-i will have a start button on the project
-send request to the ai and tell it to generate steps to execute the project.
-i will get a google-calander link which will put starting date and ending date for the perticular project
+Prmot me batch me eak project name add krna hai jisme ki project ka title ho
+us project title ko /ai/gihtub/projets me push krna hai 
+and thenn project creation me use krna hai

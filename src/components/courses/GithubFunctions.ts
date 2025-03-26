@@ -1,4 +1,5 @@
 import axios from "axios";
+import { createRepo } from "../../utils/github/GithubRepo";
 
 export async function CreateIssue (
     owner,
@@ -19,6 +20,14 @@ export async function CreateIssue (
         itemId: null,
     }));
 
+    const repo = await axios.post("/api/ai/github/repo", {
+        userId,
+        repoName,
+        desc: "This is a test repo",
+    });
+
+    repoName = repo.data.RepoName
+
     // Loop through each step and make API request
     for (const step of stepSummaries) {
         try {
@@ -26,7 +35,7 @@ export async function CreateIssue (
                 owner,
                 userId,
                 batchId,
-                repoName,
+                repoName : repoName,
                 BatchProjectId,  // Ensure this variable is defined somewhere
                 ownerType,
                 projectTitle,

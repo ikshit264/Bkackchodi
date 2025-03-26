@@ -7,16 +7,26 @@ import CourseHeader from "../../../components/courses/CourseHeader";
 import BatchList from "../../../components/courses/BatchList";
 import { CreateIssue } from "../../../components/courses/GithubFunctions";
 import { UserId as fetchUserId } from "../../../utils/userId";
+import { GetUserByUserId } from "../../../components/actions/user";
 
 const Page = () => {
   const params = useParams<{ id: string }>();
   const { id } = params;
-    const userId = fetchUserId();
-  
+  const userId = fetchUserId();
+  const [User, setUser] = useState(null)
   const [errors, setErrors] = useState("");
   const [course, setCourse] = useState(null);
   const [loading, setLoading] = useState(false);
   const [expandedBatch, setExpandedBatch] = useState(null);
+
+  useEffect(() => {
+    async function fetchUser() {
+      const fetchedUser = await GetUserByUserId(userId);
+      setUser(fetchedUser);
+    }
+    fetchUser();
+  }, [userId]);
+  
 
   useEffect(() => {
     const getCourse = async () => {
@@ -27,14 +37,15 @@ const Page = () => {
           throw new Error("Failed to fetch course. Please try again later.");
         }
         return { status: "success", data: response.data.data };
-      } catch (err) { //kuch na lagu
+      } catch (err) {
+        //kuch na lagu
         console.error("Error fetching course:", err.message);
         return { status: "error", error: err.message };
       } finally {
         setLoading(false);
       }
     };
-    
+
     const fetchCourse = async () => {
       const result = await getCourse();
       if (result.status === "success") {
@@ -53,80 +64,87 @@ const Page = () => {
   const handleStartProject = async (projectId: string) => {
     try {
       const updatedCourse = { ...course };
-  
+
       // Find the project and its batch
       let targetProject = null;
       let batchId = null;
-  
+      let ProjectTitle = null;
+
       for (const batch of updatedCourse.batches) {
         const project = batch.projects.find((p) => p.id === projectId);
         if (project) {
           targetProject = project;
           batchId = batch.id;
+          ProjectTitle = (batch.number as string) + "-Batch";
           break;
         }
       }
-  
+
       if (!targetProject) throw new Error("Project not found.");
-  
+
       const response = await axios.post("/api/ai/project", {
         topic: targetProject.title,
         learning_objectives: targetProject.learningObjectives,
       });
-  
-      if (response.status !== 200) throw new Error("Failed to fetch project data.");
-  
+
+      if (response.status !== 200)
+        throw new Error("Failed to fetch project data.");
+
       const parsedData = JSON.parse(response.data.jsonObject || "{}");
-      const steps = (parsedData?.Steps || []).map((step, index) => ({
+      console.log("parsedData", parsedData);
+      const steps = (parsedData?.steps || []).map((step, index) => ({
         index,
         step,
         status: "pending",
         issueId: null, // Placeholder for issueId
       }));
-  
+
       // Call CreateIssue and receive updated steps with issueIds
       const updatedSteps = await CreateIssue(
-        "ikshit004",    // owner
-        "Testing",        // repoName
-        "user",         // ownerType
-        projectId,      // BatchProjectId
+        (
+          await User
+        ).githubId, // owner
         targetProject.title, // projectTitle
-        batchId,        // batchId
-        userId,         // userId
-        steps           // steps
+        "user", // ownerType
+        projectId, // BatchProjectId
+        ProjectTitle, // projectTitle
+        batchId, // batchId
+        userId, // userId
+        steps // steps
       );
 
       console.log("updated Steps", updatedSteps);
-  
-// **Map back the issueId to their respective steps**
-parsedData.Steps = parsedData.Steps.map((step, index) => ({
-  ...step,
-  issueId: updatedSteps[index]?.issueId || null, // Assign issueId from updated steps
-  itemId : updatedSteps[index]?.itemId || null,
-  status: "pending",
-}));
 
-  
+      // **Map back the issueId to their respective steps**
+      parsedData.steps = parsedData.steps.map((step, index) => ({
+        ...step,
+        issueId: updatedSteps[index]?.issueId || null, // Assign issueId from updated steps
+        itemId: updatedSteps[index]?.itemId || null,
+        status: "pending",
+      }));
+
       // **Update the project with updated steps**
       await axios.patch("/api/query/project", {
         projectId,
-        updatedFields: { steps: parsedData.Steps },
+        updatedFields: { steps: parsedData.steps },
       });
-  
+
       setCourse(updatedCourse);
     } catch (error) {
       console.error("Error starting project:", error);
     }
   };
-  
-  
 
   if (loading) return <div>Loading...</div>;
   if (errors) return <div className="text-red-500">Error: {errors}</div>;
 
   return (
     <div className="p-6 max-w-4xl mx-auto">
-      <CourseHeader id={id} title={course?.title} createdAt={course?.createdAt} />
+      <CourseHeader
+        id={id}
+        title={course?.title}
+        createdAt={course?.createdAt}
+      />
       {course ? (
         <div className="border rounded-xl p-6 shadow-2xl bg-white">
           <BatchList

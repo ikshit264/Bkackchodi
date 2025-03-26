@@ -8,7 +8,7 @@ export async function POST(req: NextRequest) {
     try {
         // Parse request body
         const body = await req.json();
-        console.log('Received Request Body:', JSON.stringify(body, null, 2));
+        // console.log('Received Request Body:', JSON.stringify(body, null, 2));
 
         const {
             owner,
@@ -23,7 +23,7 @@ export async function POST(req: NextRequest) {
             issueBody
         } = body;
 
-        // Validation
+        console.log("repo", repoName);
         // Validation
         if (!owner || !userId || !repoName || !ownerType || !projectTitle || !batchId || !BatchProjectId || !issueLabel || !issueBody || !issueTitle) {
             console.error('Validation Failed: Missing required parameters or invalid steps');

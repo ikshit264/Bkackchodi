@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import GithubEvaluation from "./GithubEvaluation";
 import axios from "axios";
 import { UserId as fetchUserId } from "../../utils/userId";
+import { GetUserByUserId } from "../actions/user";
 interface Step {
   stepTitle: string;
   status: "not started" | "in progress" | "completed";
@@ -31,6 +32,7 @@ const ProjectCard = ({ project, onStartProject }: ProjectCardProps) => {
   const [steps, setSteps] = useState<Step[]>([]);
   const [showCommitModal, setShowCommitModal] = useState(false);
   const userId = fetchUserId();
+  const [User, setUser] = useState(null)
 
   const getProjectStatus = (steps: Step[]) => {
     if (!steps || steps.length === 0) return "Not Started";
@@ -38,6 +40,16 @@ const ProjectCard = ({ project, onStartProject }: ProjectCardProps) => {
       ? "Completed"
       : "In Progress";
   };
+
+  useEffect(() => {
+    async function fetchUser () {
+      const featchedUser = await GetUserByUserId(userId);
+      setUser(featchedUser);
+    }
+  
+    fetchUser();
+  }, [userId])
+  
 
   useEffect(() => {
     if (!project?.steps || project.steps.length === 0) {
@@ -107,7 +119,7 @@ const ProjectCard = ({ project, onStartProject }: ProjectCardProps) => {
           }
       );
 
-      await handleProjectIssueUpdate(issueIdandStatus, 'ikshit004');
+      await handleProjectIssueUpdate(issueIdandStatus, (await User).githubId);
 
       alert("Steps successfully committed!");
       setShowCommitModal(false);
@@ -119,7 +131,7 @@ const ProjectCard = ({ project, onStartProject }: ProjectCardProps) => {
 
   const handleProjectIssueUpdate = async (
     issues: { issueId: string; status: string, itemId : string }[],
-    owner: string = "ikshit004"
+    owner: string
   ) => {
     try {
       const response = await axios.post("/api/ai/github/projects/issue", {

@@ -5,7 +5,7 @@ import { StringOutputParser } from "@langchain/core/output_parsers";
 import { PROMPT_PROJECT } from "../../../../utils/prompt";
 
 const llm = new ChatGroq({
-  model: "mixtral-8x7b-32768",
+  model: "llama-3.3-70b-versatile",
   temperature: 0.3,
   maxTokens: 8192,
   apiKey: process.env.GROQ_API_KEY,

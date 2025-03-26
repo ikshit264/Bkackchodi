@@ -37,7 +37,7 @@ export const PROMPT_PROJECT = `You are an AI learning assistant. Your goal is to
 
 **Output:** (Strictly in JSON format within triple backticks)
 
-- Steps: A minimum of 4 clear and actionable steps. Each step must include:  
+- steps: A minimum of 4 clear and actionable steps. Each step must include:  
   - "stepTitle": A brief, descriptive title for the step.  
   - "description": A concise explanation (1-2 sentences) of what needs to be learned or done.  
   - "resources":  --At least 2 
