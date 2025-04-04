@@ -91,8 +91,8 @@ const Sidenav = () => {
         setIsHovered(false);
         setIsExpanded(false);
       }}
-      className={`fixed left-0 top-0 h-full bg-gray-900 text-white transition-all duration-300 ease-in-out ${
-        isExpanded ? "w-52" : "w-0"
+      className={`fixed z-[999] left-0 top-0 h-full bg-gray-900 text-white transition-all duration-300 ease-in-out ${
+        isExpanded ? "w-52 " : "w-0"
       }`}
     >
       <div className="flex flex-col h-full py-4">

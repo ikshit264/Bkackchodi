@@ -16,10 +16,8 @@ export async function createRepo(id : string, RepoName : string, description : s
     is_template: false,
   };
   const response = axios.post(url, data, { headers })
-
   
-  const returns = (await response).data;
-  console.log("repoName hai ye bhai", returns.name)
+  const returns = await response;
   
-    return returns.name;
+    return returns.data.name;
 }

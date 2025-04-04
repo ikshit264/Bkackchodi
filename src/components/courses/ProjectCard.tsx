@@ -33,7 +33,7 @@ const ProjectCard = ({ project, onStartProject }: ProjectCardProps) => {
   const [showCommitModal, setShowCommitModal] = useState(false);
   const userId = fetchUserId();
   const [User, setUser] = useState(null)
-
+  console.log("steps", steps);
   const getProjectStatus = (steps: Step[]) => {
     if (!steps || steps.length === 0) return "Not Started";
     return steps.every((s) => s.status === "completed")

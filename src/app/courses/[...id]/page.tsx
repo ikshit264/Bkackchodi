@@ -113,8 +113,6 @@ const Page = () => {
         steps // steps
       );
 
-      console.log("updated Steps", updatedSteps);
-
       // **Map back the issueId to their respective steps**
       parsedData.steps = parsedData.steps.map((step, index) => ({
         ...step,

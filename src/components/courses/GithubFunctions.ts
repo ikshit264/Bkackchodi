@@ -1,5 +1,4 @@
 import axios from "axios";
-import { createRepo } from "../../utils/github/GithubRepo";
 
 export async function CreateIssue (
     owner,

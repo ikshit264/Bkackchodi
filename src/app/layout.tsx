@@ -40,7 +40,7 @@ export default function RootLayout({
             </SignedOut>
             </header> */}
             <SignedIn>
-              <Sidenav />
+              {/* <Sidenav /> */}
               <UserButton/>
             </SignedIn>
           <SyncUser />

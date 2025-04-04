@@ -27,7 +27,6 @@ REQUIREMENTS:
 5. Each project must be like a learning course in which as the projects increase more new concepts are famalirsed with user starting from veryy  basic
 `;
 
-
 export const PROMPT_PROJECT = `You are an AI learning assistant. Your goal is to break down any project into a structured, step-by-step learning roadmap.
 
 **Inputs:**  
@@ -38,12 +37,12 @@ export const PROMPT_PROJECT = `You are an AI learning assistant. Your goal is to
 **Output:** (Strictly in JSON format within triple backticks)
 
 - steps: A minimum of 4 clear and actionable steps. Each step must include:  
-  - "stepTitle": A brief, descriptive title for the step.  
-  - "description": A concise explanation (1-2 sentences) of what needs to be learned or done.  
-  - "resources":  --At least 2 
+  - "stepTitle": A brief, descriptive title for the step.  (string)
+  - "description": A concise explanation (1-2 sentences) of what needs to be learned or done.  (string)
+  - "resources":  --At least 2 (Array)
     - "title": Name of the resource.  
     - "url": Valid link to the resource.  
-  - "githubCommitInstruction":  
+  - "githubCommitInstruction":  (string)
     - Clearly mention what should be committed after completing this step (e.g., "Commit the initial project setup with dependencies installed" or "Push the new feature implementation for the expense tracker"). Avoid unnecessary repetition if no commits are needed for the step.  
 
 **Special Instructions:**  

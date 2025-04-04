@@ -19,8 +19,9 @@ model User {
   githubId      String?  @unique // Storing GitHub ID to avoid duplicates
   githubOwnerid String?  @unique // Storing GitHub Owner ID to avoid duplicates
   githubToken   String? // Storing GitHub token for user
-  name          String
+  name          String  @unique
   lastName      String
+  userName      String?  
   email         String   @unique
   avatar        String? // GitHub profile picture URL
   courses       Course[]
