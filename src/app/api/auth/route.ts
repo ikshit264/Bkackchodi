@@ -73,8 +73,6 @@ export async function GET(request: Request) {
         { status: 404 }
       );
 
-
-
     return NextResponse.redirect(new URL("/dashboard", request.url));
   } catch (error) {
     console.error("Error syncing user:", error);

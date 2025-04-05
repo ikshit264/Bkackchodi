@@ -1,8 +1,9 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { validateJsonStructure } from "../../utils/JsonChecker";
+import { currentUser } from "@clerk/nextjs/dist/types/server";
 
 interface Project {
   batch: number;
@@ -31,6 +32,7 @@ const AiCall = ({
   const [timeDuration, setTimeDuration] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  // const [Users, setUsers] = useState("");
 
   // const loadingStates = [
   //   { text: "Initializing AI model..." },
@@ -45,6 +47,13 @@ const AiCall = ({
   // const handleComplete = () => {
   //   setLoading(false);
   // };
+
+  // useEffect(()=>{
+  //   const fetchUSer = async () => {
+  //     const result = await currentUser();
+  //     setUsers(result.);
+  //   }
+  // })
 
   function filterByBatches(projects: Project[]): Batch[] {
     const batches: Record<number, Batch> = {};
