@@ -34,7 +34,7 @@ export async function POST(req: Request) {
     const { id, owner, repo, topic, learning_objectives, steps } = await req.json();
 
     const github_repo_commit_data = await GithubDataCollect(id, owner, repo);
-    if (github_repo_commit_data === undefined) {
+    if (!github_repo_commit_data) {
       return NextResponse.json({ error: "Failed to evaluate the repository." }, { status: 500 });
     }
 

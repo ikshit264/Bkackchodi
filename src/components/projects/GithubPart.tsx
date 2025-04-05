@@ -23,6 +23,7 @@ const GithubPart = ({ projectId }) => {
       try {
         const response = await GetProjectByProjectId(projectId);
         setProject(response);
+        console.log(project);
       } catch (error) {
         console.error("Fetch error:", error);
       }
