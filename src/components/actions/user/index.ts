@@ -6,7 +6,7 @@ export async function GetUserByUserId(id : string) {
   if (!id) {
     throw new Error("GetUserByUserId: Provided id is invalid or undefined");
   }
-  const response = prisma.user.findUnique({
+  const response = prisma.user.findFirst({
     where: {
       clerkId: id
     }

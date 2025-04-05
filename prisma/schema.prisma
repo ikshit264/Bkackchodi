@@ -21,7 +21,7 @@ model User {
   githubToken   String? // Storing GitHub token for user
   name          String  @unique
   lastName      String
-  userName      String?  
+  userName      String  @unique  
   email         String   @unique
   avatar        String? // GitHub profile picture URL
   courses       Course[]
