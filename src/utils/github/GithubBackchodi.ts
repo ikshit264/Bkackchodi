@@ -1,3 +1,5 @@
+/* eslint-disable  @typescript-eslint/no-unused-vars */
+
 // Types for our data structures
 interface CommitResponse {
   commit: {
