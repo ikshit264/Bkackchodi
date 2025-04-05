@@ -11,11 +11,11 @@ import {
   Loader,
 } from "lucide-react";
 import axios from "axios";
-import { useRouter } from "next/navigation";
 import { UserId as fetchUserId } from "../../utils/userId";
 import { GetUserByUserId } from "../actions/user";
 import { GetProjectByProjectId } from "../actions/project";
 import { CreateIssue } from "../courses/GithubFunctions";
+import GithubPart from "./GithubPart";
 
 const ProjectDetail = ({ project: initialProject }) => {
   const [project, setProject] = useState(initialProject);
@@ -31,25 +31,27 @@ const ProjectDetail = ({ project: initialProject }) => {
     });
   });
   const [loading, setLoading] = useState(false);
-  const router = useRouter();
   const userId = fetchUserId();
   const [user, setUser] = useState(null);
-
-  // Use useCallback for functions that are dependencies in useEffect
-  const fetchUser = useCallback(async () => {
-    try {
-      const fetchedUser = await GetUserByUserId(userId);
-      setUser(fetchedUser);
-    } catch (error) {
-      console.error("Error fetching user:", error);
-    }
-  }, [userId]);
-
+  const [activeTab, setActiveTab] = useState("projects")
+  
   useEffect(() => {
+    const fetchUser = async () => {
+      if (userId !== null)
+        console.log("userId", userId);
+        try {
+          const fetchedUser = await GetUserByUserId(userId);
+          if (fetchedUser)
+            setUser(fetchedUser);
+          console.log("fetchedUser", fetchedUser)
+        } catch (error) {
+          console.error("Error fetching user:", error);
+        }
+    };
     fetchUser();
+    console.log(user)
     setSteps(initialProject.steps)
-    console.log(steps)
-  }, [fetchUser]);
+  }, [userId]);
 
   const getProjectStatus = useCallback(() => {
     if (!steps || steps.length === 0) return "Not Started";
@@ -72,11 +74,14 @@ const ProjectDetail = ({ project: initialProject }) => {
   const handleStepStatusChange = (stepIndex) => {
     const updatedSteps = [...steps];
 
+    // Allow changing from "not started" to "in progress" for the first step
     if (updatedSteps[stepIndex].status === "not started") {
-      return;
-    }
-
-    if (updatedSteps[stepIndex].status === "in progress") {
+      if (stepIndex === 0 || updatedSteps[stepIndex - 1].status === "completed") {
+        updatedSteps[stepIndex].status = "in progress";
+      } else {
+        return; // Can't start a step if previous step isn't completed
+      }
+    } else if (updatedSteps[stepIndex].status === "in progress") {
       updatedSteps[stepIndex].status = "completed";
     } else if (updatedSteps[stepIndex].status === "completed") {
       updatedSteps[stepIndex].status = "not started";
@@ -99,7 +104,6 @@ const ProjectDetail = ({ project: initialProject }) => {
 
     setSteps(updatedSteps);
     console.log("Steps", steps);
-
   };
 
   const handleStartProject = async () => {
@@ -116,7 +120,7 @@ const ProjectDetail = ({ project: initialProject }) => {
       }
 
       const parsedData = JSON.parse(response.data.jsonObject || "{}");
-      
+
       const stepsData = (parsedData?.steps || []).map((step, index) => ({
         index,
         step,
@@ -244,6 +248,27 @@ const ProjectDetail = ({ project: initialProject }) => {
           </div>
         )}
 
+        <div className="flex space-x-4 mb-4">
+          <button
+            onClick={() => setActiveTab("projects")}
+            className={`px-4 py-2 rounded-lg font-medium ${activeTab === "projects"
+              ? "bg-blue-600 text-white"
+              : "bg-gray-200 text-gray-700"
+              }`}
+          >
+            Projects
+          </button>
+          <button
+            onClick={() => setActiveTab("github")}
+            className={`px-4 py-2 rounded-lg font-medium ${activeTab === "github"
+              ? "bg-blue-600 text-white"
+              : "bg-gray-200 text-gray-700"
+              }`}
+          >
+            GitHub Evaluation
+          </button>
+        </div>
+
         {/* Main Project Card */}
         <div className="bg-white shadow-md rounded-lg overflow-hidden">
           <div className="border-b border-gray-200">
@@ -255,12 +280,12 @@ const ProjectDetail = ({ project: initialProject }) => {
                   </h1>
                   <p className="text-gray-600 mt-1">{project.description}</p>
                   {project.level && (
-                    <span className="inline-block mt-2 px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium">
+                    <span className="inline-block mt-2 px-3 py-1 bg-blue-100 text-blue-800 whitespace-nowrap rounded-full text-sm font-medium">
                       {project.level}
                     </span>
                   )}
                 </div>
-                <div className="flex items-center space-x-3">
+                <div className="flex items-center space-x-3 whitespace-nowrap">
                   {renderStatusBadge(getProjectStatus())}
 
                   {/* Start Project Button - Only show if no steps */}
@@ -279,137 +304,138 @@ const ProjectDetail = ({ project: initialProject }) => {
           </div>
 
           {/* Project Details Section */}
-          <div className="p-6">
-            <div className="mb-6">
-              <div
-                className="flex justify-between items-center cursor-pointer"
-                onClick={() => setIsObjectivesExpanded(!isObjectivesExpanded)}
-              >
-                <h2 className="text-lg font-semibold text-gray-800">
-                  Learning Objectives
-                </h2>
-                {isObjectivesExpanded ? (
-                  <ChevronUp size={20} className="text-gray-600" />
-                ) : (
-                  <ChevronDown size={20} className="text-gray-600" />
-                )}
-              </div>
-              {isObjectivesExpanded && (
-                <div className="mt-3 pl-2 border-l-2 border-blue-300">
-                  {project.learningObjectives &&
-                  project.learningObjectives.length > 0 ? (
-                    <ul className="space-y-2">
-                      {project.learningObjectives.map((objective, index) => (
-                        <li key={index} className="flex items-start">
-                          <span className="text-blue-500 mr-2">•</span>
-                          <span className="text-gray-700">{objective}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  ) : (
-                    <p className="text-gray-500 italic">
-                      No learning objectives specified
-                    </p>
-                  )}
-                </div>
-              )}
-            </div>
-
-            {/* Only show steps section if we have steps */}
-            {steps && steps.length > 0 && (
-              <div>
+          {activeTab === "projects" ?
+            <div className="p-6">
+              <div className="mb-6">
                 <div
                   className="flex justify-between items-center cursor-pointer"
-                  onClick={() => setIsStepsExpanded(!isStepsExpanded)}
+                  onClick={() => setIsObjectivesExpanded(!isObjectivesExpanded)}
                 >
                   <h2 className="text-lg font-semibold text-gray-800">
-                    Project Steps
+                    Learning Objectives
                   </h2>
-                  {isStepsExpanded ? (
+                  {isObjectivesExpanded ? (
                     <ChevronUp size={20} className="text-gray-600" />
                   ) : (
                     <ChevronDown size={20} className="text-gray-600" />
                   )}
                 </div>
-                {isStepsExpanded && (
-                  <div className="mt-4 space-y-3">
-                    {steps.map((step, index) => (
-                      <div
-                        key={index}
-                        className="flex flex-col p-4 border rounded-lg shadow-sm bg-white"
-                      >
-                        {/* Step Header */}
-                        <div className="flex items-center">
-                          <input
-                            type="checkbox"
-                            checked={step.status === "completed"}
-                            onChange={() => handleStepStatusChange(index)}
-                            className="w-5 h-5 mr-3 rounded-full border-2 border-gray-300 focus:ring-blue-500"
-                          />
-                          <div className="flex-grow">
-                            <p
-                              className={`text-lg font-semibold text-gray-800 ${
-                                step.status === "completed"
-                                  ? "line-through"
-                                  : ""
-                              }`}
-                            >
-                              {String(step.stepTitle.stepTitle)}
-                            </p>
-                          </div>
-                          <span
-                            className={`ml-3 px-3 py-1 rounded-full text-xs ${getStatusColor(
-                              step.status
-                            )}`}
-                          >
-                            {step.status}
-                          </span>
-                        </div>
-
-                        {/* Step Description */}
-                        {step.description && (
-                          <p className="mt-2 text-gray-600">
-                            {String(step.description)}
-                          </p>
-                        )}
-
-                        {/* GitHub Commit Instruction */}
-                        {step.githubCommitInstruction && (
-                          <p className="mt-2 text-green-600 font-semibold">
-                            {String(step.githubCommitInstruction)}
-                          </p>
-                        )}
-
-                        {/* Resources */}
-                        {Array.isArray(step.resources) &&
-                          step.resources.length > 0 && (
-                            <div className="mt-3">
-                              <h3 className="font-medium text-gray-700">
-                                Resources:
-                              </h3>
-                              <ul className="list-disc list-inside text-blue-500">
-                                {step.resources.map((resource, idx) => (
-                                  <li key={idx}>
-                                    <a
-                                      href={resource.url}
-                                      target="_blank"
-                                      rel="noopener noreferrer"
-                                      className="underline"
-                                    >
-                                      {resource.title}
-                                    </a>
-                                  </li>
-                                ))}
-                              </ul>
-                            </div>
-                          )}
-                      </div>
-                    ))}
+                {isObjectivesExpanded && (
+                  <div className="mt-3 pl-2 border-l-2 border-blue-300">
+                    {project.learningObjectives &&
+                      project.learningObjectives.length > 0 ? (
+                      <ul className="space-y-2">
+                        {project.learningObjectives.map((objective, index) => (
+                          <li key={index} className="flex items-start">
+                            <span className="text-blue-500 mr-2">•</span>
+                            <span className="text-gray-700">{objective}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <p className="text-gray-500 italic">
+                        No learning objectives specified
+                      </p>
+                    )}
                   </div>
                 )}
               </div>
-            )}
-          </div>
+
+              {/* Only show steps section if we have steps */}
+              {steps && steps.length > 0 && (
+                <div>
+                  <div
+                    className="flex justify-between items-center cursor-pointer"
+                    onClick={() => setIsStepsExpanded(!isStepsExpanded)}
+                  >
+                    <h2 className="text-lg font-semibold text-gray-800">
+                      Project Steps
+                    </h2>
+                    {isStepsExpanded ? (
+                      <ChevronUp size={20} className="text-gray-600" />
+                    ) : (
+                      <ChevronDown size={20} className="text-gray-600" />
+                    )}
+                  </div>
+                  {isStepsExpanded && (
+                    <div className="mt-4 space-y-3">
+                      {steps.map((step, index) => (
+                        <div
+                          key={index}
+                          className="flex flex-col p-4 border rounded-lg shadow-sm bg-white"
+                        >
+                          {/* Step Header */}
+                          <div className="flex items-center">
+                            <input
+                              type="checkbox"
+                              checked={step.status === "completed"}
+                              onChange={() => handleStepStatusChange(index)}
+                              className="w-5 h-5 mr-3 rounded-full border-2 border-gray-300 focus:ring-blue-500"
+                            />
+                            <div className="flex-grow">
+                              <p
+                                className={`text-lg font-semibold text-gray-800 ${step.status === "completed"
+                                  ? "line-through"
+                                  : ""
+                                  }`}
+                              >
+                                {String(step.stepTitle.stepTitle)}
+                              </p>
+                            </div>
+                            <span
+                              className={`ml-3 px-3 py-1 rounded-full text-xs ${getStatusColor(
+                                step.status
+                              )}`}
+                            >
+                              {step.status}
+                            </span>
+                          </div>
+
+                          {/* Step Description */}
+                          {step.stepTitle.description && (
+                            <p className="mt-2 text-xs text-gray-600">
+                              {String(step.stepTitle.description)}
+                            </p>
+                          )}
+
+                          {/* GitHub Commit Instruction */}
+                          {/* {step.stepTitle.githubCommitInstruction && (
+                          <p className="mt-2 text-green-600 font-semibold">
+                            {String(step.githubCommitInstruction)}
+                          </p>
+                        )} */}
+
+                          {/* Resources */}
+                          {Array.isArray(step.stepTitle.resources) &&
+                            step.stepTitle.resources.length > 0 && (
+                              <div className="mt-3">
+                                <h3 className="font-medium text-gray-700">
+                                  Resources:
+                                </h3>
+                                <ul className="list-disc list-inside text-blue-500">
+                                  {step.stepTitle.resources.map((resource, idx) => (
+                                    <li key={idx}>
+                                      <a
+                                        href={resource.url}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="underline"
+                                      >
+                                        {resource.title}
+                                      </a>
+                                    </li>
+                                  ))}
+                                </ul>
+                              </div>
+                            )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+            : <GithubPart projectId={project.id} />}
         </div>
 
         {/* Save Progress Button - Only show if we have steps */}

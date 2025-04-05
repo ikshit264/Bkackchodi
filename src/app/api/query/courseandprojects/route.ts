@@ -10,14 +10,17 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+
   try {
     const user = await currentUser();
+    console.log("user", user.id);
     if (!user) {
       return NextResponse.json({ error: "Not Signed In" }, { status: 401 });
     }
 
     // 📥 Extract data from request body
     const body = await request.json();
+    console.log("body", body);
     const { title, description, batches } = body;
 
     if (!title || !description || !batches || !Array.isArray(batches)) {
@@ -27,18 +30,18 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const isCourseAvailable = await prisma.course.findFirst({
-      where: {
-        title,
-      },
-    });
+    // const isCourseAvailable = await prisma.course.findFirst({
+    //   where: {
+    //     title,
+    //   },
+    // });
     
 
-    if (isCourseAvailable)
-      return NextResponse.json(
-        { message: "Course, batches, and projects Already Exists." },
-        { status: 202 }
-      );
+    // if (isCourseAvailable)
+    //   return NextResponse.json(
+    //     { message: "Course, batches, and projects Already Exists." },
+    //     { status: 202 }
+    //   );
 
     // 🏗️ Step 1: Create Course
     const newCourse = await prisma.course.create({
@@ -118,11 +121,13 @@ export async function POST(request: NextRequest) {
       { status: 201 }
     );
 
-  } catch (error) {
-    console.error("Error uploading course:", error);
+  } catch (error: unknown) {
+    const err = error as Error;
+    console.error("Error uploading course:", err?.message || err);
     return NextResponse.json(
       { error: "Internal Server Error" },
       { status: 500 }
     );
   }
+  
 }
