@@ -1,21 +1,25 @@
-import React from "react";
+"use client"
 import { getBatchesByUserNameandCourseName } from "../../../../../components/actions/batch";
 import BatchCard from "../../../../../components/batch/card";
+import WindowPathLogger from "./WindowPathLogger";
+import type { Batch } from "../../../../../components/shared/schema/Project"; 
+import { useParams } from "next/navigation";
+import { useEffect, useState } from "react";
 
-const page = async ({
-  params,
-}: {
-  params: { userName: string; courseName: string };
-}) => {
-  let Batches = null;
+export default function Page() {
+  const { userName, courseName } = useParams();
+  console.log(userName, courseName);
+  const [Batches, setBatches] = useState(null);
 
-  const { userName, courseName } = await params;
+  useEffect(() => {
+    const fetchBatches = async () => {
+      const batches = await getBatchesByUserNameandCourseName(userName as string, courseName as string);
+      setBatches(batches);
+    };
+    fetchBatches();
+  }, [userName, courseName]); // Include `courseName` in the dependency array
 
-  if (userName && courseName) {
-    Batches = await getBatchesByUserNameandCourseName(userName, courseName);
-  }
-
-  if (!Batches || Batches.length === 0) {
+  if (!Batches || !Batches.batch || Batches.batch.length === 0) {
     return (
       <div className="text-center text-red-500 text-lg">Batches not found</div>
     );
@@ -23,16 +27,15 @@ const page = async ({
 
   return (
     <div className="flex flex-col justify-around items-center min-h-screen bg-gray-100 p-4">
+      <WindowPathLogger />
       <h1 className="text-black text-7xl">{courseName}</h1>
       <div className="flex flex-wrap justify-center items-center">
         {Batches.batch
-          .sort((a, b) => a.number - b.number)
-          .map((batch) => (
+          .sort((a: Batch, b: Batch) => (a.number ?? 0) - (b.number ?? 0))
+          .map((batch: Batch) => (
             <BatchCard key={batch.id} batch={batch} />
           ))}
       </div>
     </div>
   );
-};
-
-export default page;
+}
