@@ -87,6 +87,8 @@ const Page = () => {
         learning_objectives: targetProject.learningObjectives,
       });
 
+      console.log(response.data)
+
       if (response.status !== 200)
         throw new Error("Failed to fetch project data.");
 
