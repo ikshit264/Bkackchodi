@@ -14,7 +14,7 @@ export async function POST(req: NextRequest) {
 
   try {
     const RepoName = await createRepo(userId, repoName, desc);
-    // console.log("repoName hai ye bhai", RepoName);
+    console.log("repoName hai ye bhai", RepoName);
     return NextResponse.json({ success: true, RepoName });
   } catch (error) {
     console.error("Error creating repo:", error);
