@@ -2,6 +2,8 @@
 
 import React, { useRef } from "react";
 import { motion, useScroll, useTransform } from "framer-motion";
+import { FaRobot, FaCode, FaRocket } from "react-icons/fa";
+import { Sparkles, Zap, Brain } from "lucide-react";
 
 // FlippingText component for the word changing animation
 const FlippingText = ({
@@ -33,117 +35,236 @@ const GitSmartHero = () => {
   // Parallax effect values
   const line1X = useTransform(scrollY, [0, 300], [0, -50]);
   const line2X = useTransform(scrollY, [0, 300], [0, 50]);
+  const heroY = useTransform(scrollY, [0, 300], [0, -100]);
 
   return (
     <motion.section
       ref={containerRef}
-      className="w-full sm:min-h-screen flex flex-col md:justify-center items-center my-16 md:my-0 md:-mt-10 px-4 sm:px-6"
+      className="relative w-full min-h-screen flex flex-col justify-center items-center px-4 sm:px-6 overflow-hidden"
       initial="hidden"
       animate="visible"
+      style={{ y: heroY }}
     >
-      <div className="w-full font-sans font-medium text-3xl sm:text-4xl md:text-5xl lg:text-[5.5rem] xl:text-[6.5rem] leading-tight flex flex-col items-center transition-all duration-500 ease-in-out">
-        <div className="flex flex-row items-end gap-4 justify-center mb-4 sm:mb-6">
-          <div className="flex relative items-center">
-            <motion.div
-              initial={{ scale: 0 }}
-              animate={{ scale: 1 }}
-              transition={{ duration: 0.8, delay: 0.6, type: "spring" }}
-              className="w-16 h-16 sm:w-20 sm:h-20 lg:w-28 lg:h-28 xl:w-32 xl:h-32 bg-orange-500 rounded-full flex items-center justify-center"
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 24 24"
-                fill="#ffffff"
-                className="w-6 h-6 sm:w-8 sm:h-8 lg:w-12 lg:h-12"
-              >
-                <path d="M11.644 1.59a.75.75 0 01.712 0l9.75 5.25a.75.75 0 010 1.32l-9.75 5.25a.75.75 0 01-.712 0l-9.75-5.25a.75.75 0 010-1.32l9.75-5.25z" />
-                <path d="M3.265 10.602l7.668 4.129a2.25 2.25 0 002.134 0l7.668-4.13 1.37.739a.75.75 0 010 1.32l-9.75 5.25a.75.75 0 01-.71 0l-9.75-5.25a.75.75 0 010-1.32l1.37-.738z" />
-                <path d="M10.933 19.231l-7.668-4.13-1.37.739a.75.75 0 000 1.32l9.75 5.25c.221.12.489.12.71 0l9.75-5.25a.75.75 0 000-1.32l-1.37-.738-7.668 4.13a2.25 2.25 0 01-2.134-.001z" />
-              </svg>
-            </motion.div>
-          </div>
-          <motion.div
-            initial={{ opacity: 0, y: 50, skew: "-30deg" }}
-            animate={{ opacity: 1, y: 0, skew: "0deg" }}
-            transition={{ duration: 0.8, delay: 0.8, ease: "easeOut" }}
-            className="z-50 mt-4 sm:mt-0"
-          >
-            GitSmart
-          </motion.div>
-        </div>
-
+      {/* Background Elements */}
+      <div className="absolute inset-0 overflow-hidden">
+        {/* Gradient Orbs */}
         <motion.div
-          className="self-center   flex items-center gap-2 sm:gap-3 md:gap-4 my-2 sm:my-4"
-          style={{ x: line1X }}
+          initial={{ scale: 0, opacity: 0 }}
+          animate={{ scale: 1, opacity: 0.3 }}
+          transition={{ duration: 2, delay: 0.5 }}
+          className="absolute top-1/4 left-1/4 w-96 h-96 bg-gradient-to-r from-primary-500/20 to-secondary-500/20 rounded-full blur-3xl"
+        />
+        <motion.div
+          initial={{ scale: 0, opacity: 0 }}
+          animate={{ scale: 1, opacity: 0.2 }}
+          transition={{ duration: 2, delay: 0.8 }}
+          className="absolute bottom-1/4 right-1/4 w-80 h-80 bg-gradient-to-r from-accent-500/20 to-purple-500/20 rounded-full blur-3xl"
+        />
+        
+        {/* Floating Icons */}
+        <motion.div
+          animate={{ y: [-10, 10, -10] }}
+          transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+          className="absolute top-20 left-20 text-primary-500/30"
         >
-          <motion.span
-            initial={{ opacity: 0, y: 100, skew: "-90deg" }}
-            animate={{ opacity: 1, y: 0, skew: "0deg" }}
-            transition={{ duration: 0.8, delay: 0.8, ease: "easeOut" }}
-          >
-            Smart
-          </motion.span>
-
-          <motion.span
-            initial={{ opacity: 0, scale: 3 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.8, delay: 0.8, ease: "easeOut" }}
-            className="text-blue-500"
-          >
-            Learning
-          </motion.span>
+          <FaCode size={32} />
         </motion.div>
-
         <motion.div
-          transition={{ duration: 1, delay: 0.8, ease: [0.6, 0.05, 0.2, 0.9] }}
-          className="flex items-end gap-2 sm:gap-3 md:gap-4 self-center"
-          style={{ x: line2X }}
+          animate={{ y: [10, -10, 10] }}
+          transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+          className="absolute top-32 right-32 text-secondary-500/30"
         >
-          <motion.span
-            initial={{ opacity: 0, y: 50, skew: "-30deg" }}
-            animate={{ opacity: 1, y: 0, skew: "0deg" }}
-            transition={{ duration: 0.8, delay: 0.8, ease: "easeOut" }}
-          >
-            Seamless
-          </motion.span>
-          <motion.div
-            initial={{ opacity: 0, scale: 0 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.8, delay: 0.6, ease: "easeOut" }}
-            whileHover={{ scale: 1.1, rotate: 180 }}
-            whileTap={{ scale: 0.8 }}
-            className="bg-purple-600 ml-1 sm:ml-2 w-12 h-12 sm:w-16 sm:h-16 md:w-20 md:h-20 lg:w-24 lg:h-24 xl:w-28 xl:h-28 rounded-full flex items-center justify-center"
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 24 24"
-              fill="#ffffff"
-              className="w-5 h-5 sm:w-6 sm:h-6 md:w-8 md:h-8 lg:w-10 lg:h-10"
-            >
-              <path
-                fillRule="evenodd"
-                d="M14.447 3.027a.75.75 0 01.527.92l-4.5 16.5a.75.75 0 01-1.448-.394l4.5-16.5a.75.75 0 01.921-.526zM16.72 6.22a.75.75 0 011.06 0l5.25 5.25a.75.75 0 010 1.06l-5.25 5.25a.75.75 0 11-1.06-1.06L21.44 12l-4.72-4.72a.75.75 0 010-1.06zm-9.44 0a.75.75 0 010 1.06L2.56 12l4.72 4.72a.75.75 0 11-1.06 1.06L.97 12.53a.75.75 0 010-1.06l5.25-5.25a.75.75 0 011.06 0z"
-                clipRule="evenodd"
-              />
-            </svg>
-          </motion.div>
-          <FlippingText
-            text="Automation"
-            className="text-3xl sm:text-4xl md:text-5xl lg:text-[5.5rem] xl:text-[6.5rem]"
-          />
+          <Brain size={28} />
+        </motion.div>
+        <motion.div
+          animate={{ y: [-5, 15, -5] }}
+          transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
+          className="absolute bottom-32 left-32 text-accent-500/30"
+        >
+          <Zap size={24} />
         </motion.div>
       </div>
 
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, delay: 1.5 }}
-        className="mt-12 md:mt-16 lg:mt-24 text-center"
-      >
-        <p className="text-lg sm:text-xl md:text-2xl text-gray-500">
-          Master Git. Automate Workflows. Code Smarter.
-        </p>
-      </motion.div>
+      {/* Main Content */}
+      <div className="relative z-10 text-center max-w-6xl mx-auto">
+        {/* Logo and Brand */}
+        <motion.div
+          initial={{ opacity: 0, y: 50 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8, delay: 0.2 }}
+          className="flex flex-col items-center mb-12"
+        >
+          <motion.div
+            initial={{ scale: 0, rotate: -180 }}
+            animate={{ scale: 1, rotate: 0 }}
+            transition={{ duration: 1, delay: 0.4, type: "spring", stiffness: 200 }}
+            className="relative mb-6"
+          >
+            <div className="w-20 h-20 bg-gradient-to-br from-primary-500 via-secondary-500 to-accent-500 rounded-2xl flex items-center justify-center shadow-glow animate-glow">
+              <FaRobot className="w-10 h-10 text-white" />
+            </div>
+            <motion.div
+              animate={{ rotate: 360 }}
+              transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
+              className="absolute -inset-2 border-2 border-primary-500/30 rounded-2xl"
+            />
+          </motion.div>
+          
+          <motion.h1
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, delay: 0.6 }}
+            className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-display font-bold mb-4"
+          >
+            <span className="text-gradient">GitSmart</span>
+          </motion.h1>
+          
+          <motion.p
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.8, delay: 0.8 }}
+            className="text-lg sm:text-xl text-neutral-600 dark:text-neutral-400 max-w-2xl"
+          >
+            AI-Powered Course Roadmap Automation Platform
+          </motion.p>
+        </motion.div>
+
+        {/* Main Headline */}
+        <div className="w-full font-display font-bold text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl leading-tight mb-12">
+          <motion.div
+            className="flex flex-col items-center space-y-4"
+            style={{ x: line1X }}
+          >
+            <motion.div
+              initial={{ opacity: 0, y: 100, skew: "-30deg" }}
+              animate={{ opacity: 1, y: 0, skew: "0deg" }}
+              transition={{ duration: 0.8, delay: 1, ease: "easeOut" }}
+              className="flex items-center space-x-4"
+            >
+              <motion.span
+                whileHover={{ scale: 1.05 }}
+                className="text-gradient-purple"
+              >
+                Smart
+              </motion.span>
+              <motion.div
+                initial={{ opacity: 0, scale: 3 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.8, delay: 1.2, ease: "easeOut" }}
+                whileHover={{ scale: 1.1, rotate: 180 }}
+                whileTap={{ scale: 0.9 }}
+                className="w-16 h-16 bg-gradient-to-br from-primary-500 to-secondary-500 rounded-2xl flex items-center justify-center shadow-glow"
+              >
+                <Sparkles className="w-8 h-8 text-white" />
+              </motion.div>
+              <motion.span
+                whileHover={{ scale: 1.05 }}
+                className="text-gradient"
+              >
+                Learning
+              </motion.span>
+            </motion.div>
+          </motion.div>
+
+          <motion.div
+            className="flex items-center justify-center space-x-4"
+            style={{ x: line2X }}
+          >
+            <motion.span
+              initial={{ opacity: 0, y: 50, skew: "-30deg" }}
+              animate={{ opacity: 1, y: 0, skew: "0deg" }}
+              transition={{ duration: 0.8, delay: 1.4, ease: "easeOut" }}
+              whileHover={{ scale: 1.05 }}
+              className="text-gradient-green"
+            >
+              Seamless
+            </motion.span>
+            <motion.div
+              initial={{ opacity: 0, scale: 0 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.8, delay: 1.6, ease: "easeOut" }}
+              whileHover={{ scale: 1.1, rotate: 180 }}
+              whileTap={{ scale: 0.8 }}
+              className="w-16 h-16 bg-gradient-to-br from-accent-500 to-purple-500 rounded-2xl flex items-center justify-center shadow-glow"
+            >
+              <FaRocket className="w-8 h-8 text-white" />
+            </motion.div>
+            <FlippingText
+              text="Automation"
+              className="text-gradient-purple"
+            />
+          </motion.div>
+        </div>
+
+        {/* Subtitle */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 1.8 }}
+          className="mb-12"
+        >
+          <p className="text-xl sm:text-2xl text-neutral-600 dark:text-neutral-400 max-w-3xl mx-auto leading-relaxed">
+            Master Git. Automate Workflows. Code Smarter.
+            <br />
+            <span className="text-gradient">Transform your development journey with AI-powered learning paths.</span>
+          </p>
+        </motion.div>
+
+        {/* CTA Buttons */}
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 2 }}
+          className="flex flex-col sm:flex-row items-center justify-center space-y-4 sm:space-y-0 sm:space-x-6"
+        >
+          <motion.button
+            whileHover={{ scale: 1.05, y: -2 }}
+            whileTap={{ scale: 0.95 }}
+            className="btn-primary text-lg px-8 py-4 rounded-2xl shadow-glow"
+          >
+            <span className="flex items-center space-x-2">
+              <Sparkles size={20} />
+              <span>Start Learning</span>
+            </span>
+          </motion.button>
+          
+          <motion.button
+            whileHover={{ scale: 1.05, y: -2 }}
+            whileTap={{ scale: 0.95 }}
+            className="btn-ghost text-lg px-8 py-4 rounded-2xl"
+          >
+            <span className="flex items-center space-x-2">
+              <Brain size={20} />
+              <span>Explore Features</span>
+            </span>
+          </motion.button>
+        </motion.div>
+
+        {/* Stats */}
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 2.2 }}
+          className="mt-16 grid grid-cols-1 sm:grid-cols-3 gap-8 max-w-2xl mx-auto"
+        >
+          {[
+            { number: "10K+", label: "Students" },
+            { number: "500+", label: "Courses" },
+            { number: "95%", label: "Success Rate" }
+          ].map((stat, index) => (
+            <motion.div
+              key={index}
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.5, delay: 2.4 + index * 0.1 }}
+              className="text-center"
+            >
+              <div className="text-3xl font-bold text-gradient mb-2">{stat.number}</div>
+              <div className="text-sm text-neutral-600 dark:text-neutral-400">{stat.label}</div>
+            </motion.div>
+          ))}
+        </motion.div>
+      </div>
     </motion.section>
   );
 };

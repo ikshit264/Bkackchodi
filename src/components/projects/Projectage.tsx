@@ -238,7 +238,7 @@ const ProjectDetail = ({ project: initialProject }) => {
   }, []);
 
   return (
-    <div className="flex justify-center items-center min-h-screen bg-gray-100 p-4">
+    <div className="flex justify-center items-center min-h-screen p-4">
       <div className="w-full max-w-4xl space-y-6">
         {/* Loading Overlay */}
         {loading && (
@@ -486,7 +486,7 @@ const Page = ({ params }) => {
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center min-h-screen bg-gray-100">
+      <div className="flex justify-center items-center min-h-screen">
         <div className="flex items-center space-x-3 bg-white p-6 rounded-lg shadow-md">
           <Loader size={24} className="animate-spin text-blue-600" />
           <p className="text-gray-800 font-medium">
