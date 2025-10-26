@@ -21,7 +21,7 @@ const ProjectList: React.FC<ProjectsProps> = ({
         initial={{ y: "100%" }}
         animate={{ y: activeTab ? "0%" : "100%" }}
         transition={{ type: "spring", stiffness: 100, damping: 15 }}
-        className="fixed bottom-0 left-0 w-full h-[90%] bg-white shadow-lg p-6 z-50"
+        className="fixed bottom-0 left-0 w-full h-full glass shadow-lg px-40 py-20 z-100"
       >
         <button
           className="absolute top-4 right-4 text-xl text-black"

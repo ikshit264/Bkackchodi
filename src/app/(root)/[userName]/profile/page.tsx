@@ -40,7 +40,7 @@ const ProfilePage = () => {
   }
 
   return (
-    <div className="flex justify-center items-center min-h-screen bg-gray-400 p-4">
+    <div className="flex justify-center items-center min-h-screen p-4">
       <div className="w-full max-w-lg bg-white shadow-md rounded-lg p-6">
         <div className="flex items-center space-x-4 border-b pb-4">
           {user.avatar && <Image src={user.avatar} alt="Avatar" height={16} width={16} className="w-16 h-16 rounded-full border" />}

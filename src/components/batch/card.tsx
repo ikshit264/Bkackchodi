@@ -52,9 +52,9 @@ const BatchCard = ({ batch }: { batch: Batch }) => {
   };
 
   return (
-    <div>
+    <div className="z-100">
       <div
-        className="bg-white shadow-md rounded-lg p-4 m-2 w-72 border border-gray-300 text-center relative cursor-pointer"
+        className="bg-white shadow-md rounded-lg p-4 m-2 w-72 border border-gray-300 text-center relative cursor-pointer z-100"
         onClick={() => {
           setActiveTab(batch.id);
           fetchProjectDetails();
