@@ -45,7 +45,7 @@ const CoursesPage = () => {
     <div className="flex flex-wrap justify-center gap-6 p-6 min-h-screen bg-gray-100">
       {courses.map((course) => (
         <div key={course.id}>
-          <Link href={`c/${course.title.split(" ").join("_")}`}>
+          <Link href={`/${userName}/c/${course.id}`}>
             <CourseCard title={course.title} status={course.status} />
           </Link>
         </div>

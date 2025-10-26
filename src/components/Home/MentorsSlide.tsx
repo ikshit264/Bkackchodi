@@ -68,7 +68,6 @@ const MentorsSlider = () => {
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const [isPaused, setIsPaused] = useState(false);
   const [resetTimeout, setResetTimeout] = useState<NodeJS.Timeout | null>(null);
-  const [isAtEnd, setIsAtEnd] = useState(false);
 
   // Check if we're at the end of the scroll
   const checkIfAtEnd = () => {
@@ -79,7 +78,6 @@ const MentorsSlider = () => {
       scrollRef.current.scrollLeft + scrollRef.current.clientWidth >=
       scrollRef.current.scrollWidth - 1;
 
-    setIsAtEnd(isEnd);
     return isEnd;
   };
 

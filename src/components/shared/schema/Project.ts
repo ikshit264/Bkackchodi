@@ -17,6 +17,7 @@ export interface Project {
 }
 
 export interface Batch {
+  userId : string;
   id: string;
   projects: Project[];
   number ?: number;
