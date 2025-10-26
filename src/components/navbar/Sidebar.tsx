@@ -10,42 +10,76 @@ import { DiGoogleAnalytics } from "react-icons/di";
 import { RefreshCw } from "lucide-react";
 import Link from "next/link";
 import axios from "axios";
+import { useUser } from "@clerk/nextjs";
+import { GetUserByUserId } from "../actions/user";
 
-const Sidenav = () => {
+type Course = {
+  id: string;
+  title: string;
+  status?: string;
+};
+
+const Sidenav: React.FC = () => {
+  const { user, isLoaded } = useUser();
+  const [username, setUsername] = useState<string | null>(null);
+
   const [isExpanded, setIsExpanded] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
   const [isCoursesExpanded, setIsCoursesExpanded] = useState(false);
-  const [courses, setCourses] = useState([]);
+  const [courses, setCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+  const [error, setError] = useState<string>("");
 
-  const menuItems = [
-    { icon: FaHome, label: "Dashboard", href: "/dashboard" },
-    { icon: MdMessage, label: "Courses", expandable: true },
-    { icon: AiOutlinePlusCircle, label: "New Course", href: "/new_course" },
-    { icon: DiGoogleAnalytics, label: "Analytics", href: "/analytics" },
-    { icon: IoMdSettings, label: "Settings", href: "/settings" },
-  ];
+  // load username from Clerk -> app DB (GetUserByUserId)
+  useEffect(() => {
+    if (!isLoaded) return;
+
+    const fetchUsername = async () => {
+      try {
+        if (!user) {
+          setUsername(null);
+          return;
+        }
+        // GetUserByUserId expected to return an object with username/name
+        const fetched = await GetUserByUserId(user.id);
+        // defensively read username property
+        const name = fetched.userName;
+        setUsername(name ?? null);
+      } catch (err) {
+        console.error("Error fetching username:", (err as Error).message);
+        setUsername(null);
+      }
+    };
+
+    fetchUsername();
+  }, [user, isLoaded]);
 
   const getCourses = async () => {
+    setLoading(true);
+    setError("");
     try {
-      setLoading(true);
       const response = await axios.get("/api/query/course");
-      
-      if (response.status !== 200) {
-        throw new Error("Failed to fetch courses. Please try again.");
-      }
-      
-      const jsonData = response.data.data;
 
-      if (!jsonData || jsonData.length === 0) {
-        return { status: "success", data: [], error: "" };
-      }
+      // ensure JSON shape
+      const payload =
+        typeof response.data === "string"
+          ? JSON.parse(response.data)
+          : response.data;
 
-      return { status: "success", data: jsonData, error: "" };
+      const data: Course[] = Array.isArray(payload?.data)
+        ? payload.data
+        : [];
+
+      setCourses(data);
     } catch (err) {
-      console.error("Error fetching courses:", err.message);
-      return { status: "error", data: [], error: err.message };
+      const message =
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (err as any)?.response?.data?.message ||
+        (err as Error).message ||
+        "Failed to fetch courses";
+      console.error("Error fetching courses:", message);
+      setError(message);
+      setCourses([]);
     } finally {
       setLoading(false);
       setIsCoursesExpanded(true);
@@ -53,20 +87,12 @@ const Sidenav = () => {
   };
 
   useEffect(() => {
-    const fetchCourses = async () => {
-      const result = await getCourses();
-      if (result.status === "success") {
-        setCourses(result.data);
-      } else {
-        setError(result.error);
-      }
-    };
-
-    fetchCourses();
+    // initial load
+    getCourses();
   }, []);
 
   useEffect(() => {
-    const handleMouseMove = (event) => {
+    const handleMouseMove = (event: MouseEvent) => {
       const mouseX = event.clientX;
       if (mouseX < 100 && !isHovered) {
         setIsExpanded(true);
@@ -76,10 +102,20 @@ const Sidenav = () => {
     };
 
     window.addEventListener("mousemove", handleMouseMove);
-    return () => {
-      window.removeEventListener("mousemove", handleMouseMove);
-    };
+    return () => window.removeEventListener("mousemove", handleMouseMove);
   }, [isHovered]);
+
+  const menuItems = [
+    {
+      icon: FaHome,
+      label: username ?? "Home",
+      href: username ? `/${username}/c` : "/",
+    },
+    { icon: MdMessage, label: "c", expandable: true },
+    { icon: AiOutlinePlusCircle, label: "New Course", href: `/${username}/new_course` },
+    { icon: DiGoogleAnalytics, label: "profile", href: "/profile" },
+    { icon: IoMdSettings, label: "settings", href: "/settings" },
+  ];
 
   return (
     <nav
@@ -100,7 +136,7 @@ const Sidenav = () => {
           <div key={index}>
             {item.expandable ? (
               <div
-                onClick={() => setIsCoursesExpanded(!isCoursesExpanded)}
+                onClick={() => setIsCoursesExpanded((s) => !s)}
                 className="flex items-center px-4 py-3 hover:bg-gray-800 cursor-pointer transition-all"
               >
                 <item.icon size={24} />
@@ -168,15 +204,15 @@ const Sidenav = () => {
                   ) : (
                     courses.map((course, idx) => (
                       <motion.div
-                        key={idx}
+                        key={course.id}
                         initial={{ opacity: 0, x: -20 }}
                         animate={{ opacity: 1, x: 0 }}
                         exit={{ opacity: 0, x: -20 }}
-                        transition={{ delay: idx * 0.1, duration: 0.2 }}
+                        transition={{ delay: idx * 0.05, duration: 0.2 }}
                         className="flex justify-between items-center px-4 py-2 text-sm bg-gray-800 rounded-md my-1"
                       >
                         <Link
-                          href={`/courses/${course.id}`}
+                          href={`/${username}/c/${course.id}`}
                           className="flex items-center justify-between w-full"
                         >
                           <span>{course.title}</span>
@@ -187,7 +223,7 @@ const Sidenav = () => {
                                 : "bg-red-500"
                             }`}
                           >
-                            {course.status}
+                            {course.status ?? "Unknown"}
                           </span>
                         </Link>
                       </motion.div>

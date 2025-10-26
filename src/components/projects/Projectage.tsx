@@ -51,6 +51,7 @@ const ProjectDetail = ({ project: initialProject }) => {
     fetchUser();
     console.log(user)
     setSteps(initialProject.steps)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userId]);
 
   const getProjectStatus = useCallback(() => {

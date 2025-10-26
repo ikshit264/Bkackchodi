@@ -49,7 +49,7 @@ export async function GetBatchesByUserIdAndCourseName(
 
 export async function getBatchesByUserNameandCourseName(
   userName: string,
-  courseName: string
+  courseName: string,
 ) {
   const userId = await GetUserIdByName(userName);
   if (!userId) {
@@ -63,29 +63,90 @@ export async function getBatchesByUserNameandCourseName(
   return batches;
 }
 
-export async function getBatchProjectsByBatchId(BatchId: string) {
-  const batch = await prisma.batch.findUnique({
+export async function getBatchProjectsByCourseId(userName : string, CourseId: string) {
+  const userId = await GetUserIdByName(userName);
+  if (!userId) {
+    throw Error("User Id Not Found");
+  }
+
+  const response = await prisma.course.findFirst({
     where: {
-      id: BatchId,
+      userId: userId,
+      id: CourseId,
     },
     select: {
       id: true,
-      projects: {
+      title: true,
+      status: true,
+      batch: {
         select: {
           id: true,
-          title: true,
-          githubRepo: true,
-          description: true,
-          level: true,
+          githubProjectId: true,
           status: true,
-          position: true,
-          learningObjectives: true,
-          steps: true,
-          GithubData: true,
+          number: true,
+          projects: {
+            select: {
+              title: true,
+              id: true,
+              status: true,
+              level: true,
+              position: true,
+            },
+          },
         },
       },
     },
   });
-  return batch;
+  return response;
 }
 
+export async function getBatchProjectsByBatchId(userId: string, batchId: string) {
+  try {
+    const batch = await prisma.batch.findUnique({
+      where: {
+        id: batchId,
+      },
+      include: {
+        projects: {
+          orderBy: {
+            position: 'asc'
+          },
+          select: {
+            id: true,
+            title: true,
+            level: true,
+            position: true,
+            status: true,
+            description: true,
+            learningObjectives: true
+          }
+        }
+      }
+    });
+
+    if (!batch) {
+      throw new Error(`Batch with id ${batchId} not found`);
+    }
+
+    // Transform the data to match the expected Batch type
+    const formattedBatch = {
+      id: batch.id,
+      number: batch.number,
+      projects: batch.projects.map(project => ({
+        id: project.id,
+        title: project.title,
+        level: project.level as 'Beginner' | 'Intermediate' | 'Advanced' | 'Expert' | 'Unknown',
+        position: project.position,
+        status: project.status || undefined,
+        description: project.description || undefined,
+        learningObjectives: project.learningObjectives as string[] || []
+      }))
+    };
+
+    return formattedBatch;
+
+  } catch (error) {
+    console.error('Error in getBatchProjectsByBatchId:', error);
+    throw new Error(error instanceof Error ? error.message : 'Failed to fetch batch projects');
+  }
+}
