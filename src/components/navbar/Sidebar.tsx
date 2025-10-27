@@ -60,7 +60,7 @@ const Sidenav = () => {
     },
     { 
       icon: MdMessage, 
-      label: "c", 
+      label: "Courses", 
       expandable: true,
       gradient: "from-secondary-500 to-secondary-600"
     },
@@ -355,9 +355,9 @@ const Sidenav = () => {
                 exit={{ opacity: 0 }}
                 className="text-center"
               >
-                <p className="text-xs text-neutral-600 dark:text-neutral-400">
+                {/* <p className="text-xs text-neutral-600 dark:text-neutral-400">
                   Powered by AI • Built with ❤️
-                </p>
+                </p> */}
               </motion.div>
             )}
           </AnimatePresence>

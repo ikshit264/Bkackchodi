@@ -40,7 +40,7 @@ const GitSmartHero = () => {
   return (
     <motion.section
       ref={containerRef}
-      className="relative w-full min-h-screen flex flex-col justify-center items-center px-4 sm:px-6 overflow-hidden"
+      className="relative w-full min-h-screen flex flex-col justify-center items-center px-4 sm:px-6 overflow-hidden pt-12"
       initial="hidden"
       animate="visible"
       style={{ y: heroY }}

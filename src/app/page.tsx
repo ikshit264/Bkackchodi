@@ -7,7 +7,7 @@ import MentorsSlider from "../components/Home/MentorsSlide";
 export default function Home() {
   return (
     <motion.div 
-      className="overflow-hidden"
+      className="overflow-hidden ml-12"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.5 }}

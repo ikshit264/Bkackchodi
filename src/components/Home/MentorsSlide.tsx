@@ -7,10 +7,11 @@ import { ChevronLeft, ChevronRight, Users } from "lucide-react";
 import { IoLogoInstagram } from "react-icons/io";
 import { FaSquareXTwitter } from "react-icons/fa6";
 import { BsLinkedin } from "react-icons/bs";
-import img1 from "../../../public/developers/ikshit.jpeg";
-import img2 from "../../../public/developers/tushar.jpeg";
-import img3 from "../../../public/developers/dev.jpeg";
-import img4 from "../../../public/developers/kshrin.jpeg";
+import img1 from "../../../public/developers/ikshit.jpg";
+import img2 from "../../../public/developers/vidyasagar.jpg";
+import img3 from "../../../public/developers/preet.png";
+import img4 from "../../../public/developers/kedar.png";
+import img5 from "../../../public/developers/apeksha.png";
 
 const mentorDetails = [
   {
@@ -27,30 +28,40 @@ const mentorDetails = [
     name: "Vidyasagar Dadilwar",
     role: "Full Stack Developer",
     image: img2,
-    imageFallback: "TP",
-    linkedin: "https://linkedin.com/in/tushar-pamnani",
-    twitter: "https://x.com/Tushar_Pamnani_",
-    instagram: "https://instagram.com/tusharpamnani7",
+    imageFallback: "VD",
+    linkedin: "https://linkedin.com/in/vidyasagar-dadilwar/",
+    twitter: "https://x.com/",
+    instagram: "https://instagram.com/",
     gradient: "from-secondary-500 to-secondary-600"
   },
   {
     name: "Kedar Khati",
     role: "Backend Developer",
     image: img4,
-    imageFallback: "DD",
-    twitter: "https://x.com/Dev_dua_",
-    instagram: "https://www.instagram.com/_dev_dua?igsh=enpxeHljaXExZTcy",
-    linkedin: "https://www.linkedin.com/in/devansh-dua-dd18",
+    imageFallback: "KK",
+    twitter: "https://x.com/",
+    instagram: "https://www.instagram.com/",
+    linkedin: "https://www.linkedin.com/",
     gradient: "from-accent-500 to-accent-600"
   },
   {
     name: "Preet Mahadule",
     role: "Frontend Developer",
     image: img3,
-    imageFallback: "KM",
-    linkedin: "https://www.linkedin.com/in/kshirin-modi-747ab4269/",
-    twitter: "https://x.com/kshirinmodi_22",
-    instagram: "https://www.instagram.com/kshirin_007",
+    imageFallback: "PM",
+    linkedin: "https://www.linkedin.com/",
+    twitter: "https://x.com/",
+    instagram: "https://www.instagram.com/",
+    gradient: "from-purple-500 to-purple-600"
+  },
+  {
+    name: "Apeksha Jamjar",
+    role: "Backend Developer",
+    image: img5,
+    imageFallback: "AJ",
+    linkedin: "https://www.linkedin.com/",
+    twitter: "https://x.com/",
+    instagram: "https://www.instagram.com/",
     gradient: "from-purple-500 to-purple-600"
   }
 ];
@@ -59,7 +70,6 @@ const MentorsSlider = () => {
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const [isPaused, setIsPaused] = useState(false);
   const [resetTimeout, setResetTimeout] = useState<NodeJS.Timeout | null>(null);
-  const [currentIndex, setCurrentIndex] = useState(0);
 
   // Check if we're at the end of the scroll
   const checkIfAtEnd = () => {
@@ -85,14 +95,14 @@ const MentorsSlider = () => {
           const timeout = setTimeout(() => {
             if (!isPaused && scrollRef.current) {
               scrollRef.current.scrollTo({ left: 0, behavior: "smooth" });
-              setCurrentIndex(0);
+              // setCurrentIndex(0);
             }
           }, 2000);
 
           setResetTimeout(timeout);
         } else {
           scrollRef.current.scrollBy({ left: 320, behavior: "smooth" });
-          setCurrentIndex(prev => (prev + 1) % mentorDetails.length);
+          // setCurrentIndex(prev => (prev + 1) % mentorDetails.length);
         }
       }
     }, 3000);
@@ -337,7 +347,7 @@ const MentorsSlider = () => {
             onClick={() => {
               if (scrollRef.current) {
                 scrollRef.current.scrollBy({ left: -320, behavior: "smooth" });
-                setCurrentIndex(prev => prev === 0 ? mentorDetails.length - 1 : prev - 1);
+                // setCurrentIndex(prev => prev === 0 ? mentorDetails.length - 1 : prev - 1);
               }
             }}
           >
@@ -351,44 +361,13 @@ const MentorsSlider = () => {
             onClick={() => {
               if (scrollRef.current) {
                 scrollRef.current.scrollBy({ left: 320, behavior: "smooth" });
-                setCurrentIndex(prev => (prev + 1) % mentorDetails.length);
+                // setCurrentIndex(prev => (prev + 1) % mentorDetails.length);
               }
             }}
           >
             <ChevronRight size={24} className="text-gray-900 dark:text-gray-100" />
           </motion.button>
         </div>
-
-        {/* Dots indicator */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.6 }}
-          viewport={{ once: true }}
-          className="flex justify-center items-center space-x-2 mt-8"
-        >
-          {mentorDetails.map((_, index) => (
-            <motion.button
-              key={index}
-              whileHover={{ scale: 1.2 }}
-              whileTap={{ scale: 0.8 }}
-              className={`w-3 h-3 rounded-full transition-all duration-300 ${
-                index === currentIndex 
-                  ? 'bg-primary-500 shadow-glow' 
-                  : 'bg-neutral-100 dark:bg-neutral-800 hover:text-neutral-700 dark:hover:text-neutral-300'
-              }`}
-              onClick={() => {
-                if (scrollRef.current) {
-                  scrollRef.current.scrollTo({ 
-                    left: index * 320, 
-                    behavior: "smooth" 
-                  });
-                  setCurrentIndex(index);
-                }
-              }}
-            />
-          ))}
-        </motion.div>
       </div>
     </section>
   );

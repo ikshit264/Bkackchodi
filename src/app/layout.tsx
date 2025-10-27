@@ -63,7 +63,7 @@ export default function RootLayout({
             </SignedIn>
             <SyncUser />
             <Sidenav />
-            <main className="pt-20 px-4 md:px-6 lg:px-8 min-h-screen">
+            <main className=" px-4 md:px-6 lg:px-8 min-h-screen">
               <div className="max-w-7xl mx-auto">
                 {children}
               </div>
