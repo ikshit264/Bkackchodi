@@ -16,6 +16,7 @@ const CoursesPage = () => {
     const fetchCourses = async () => {
       if (userName) {
         try {
+          console.log("Username: lkijsnvienvifensfhesihflkewsfnihsifsvjhshefsl: ",userName)
           const fetchedCourses = await GetCoursesByName(userName);
           setCourses(fetchedCourses);
         } catch (error) {
@@ -42,7 +43,7 @@ const CoursesPage = () => {
   }
 
   return (
-    <div className="flex flex-wrap justify-center gap-6 p-6 min-h-screen bg-gray-100">
+    <div className="flex flex-wrap justify-center gap-6 p-6 min-h-screen ">
       {courses.map((course) => (
         <div key={course.id}>
           <Link href={`/${userName}/c/${course.id}`}>
