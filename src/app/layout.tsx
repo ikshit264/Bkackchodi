@@ -1,5 +1,3 @@
-/* eslint-disable  @typescript-eslint/no-unused-vars */
-
 import type { Metadata } from "next";
 import { ClerkProvider, SignedIn, UserButton } from "@clerk/nextjs";
 import { Inter, Space_Grotesk, JetBrains_Mono } from "next/font/google";

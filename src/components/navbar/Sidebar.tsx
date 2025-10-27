@@ -9,67 +9,107 @@ import { AiOutlinePlusCircle } from "react-icons/ai";
 import { RefreshCw, Sparkles } from "lucide-react";
 import Link from "next/link";
 import axios from "axios";
+import { useUser } from "@clerk/nextjs";
+import { GetUserByUserId } from "../actions/user";
+
+type Course = {
+  id: string;
+  title: string;
+  status?: string;
+};
 
 const Sidenav = () => {
+  const { user, isLoaded } = useUser();
+  const [username, setUsername] = useState<string | null>(null);
   const [isExpanded, setIsExpanded] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
   const [isCoursesExpanded, setIsCoursesExpanded] = useState(false);
-  const [courses, setCourses] = useState([]);
+  const [courses, setCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+
+  // Load username from Clerk -> app DB
+  useEffect(() => {
+    if (!isLoaded) return;
+
+    const fetchUsername = async () => {
+      try {
+        if (!user) {
+          setUsername(null);
+          return;
+        }
+        // GetUserByUserId expected to return an object with userName
+        const fetched = await GetUserByUserId(user.id);
+        const name = fetched.userName;
+        setUsername(name ?? null);
+      } catch (err) {
+        console.error("Error fetching username:", (err as Error).message);
+        setUsername(null);
+      }
+    };
+
+    fetchUsername();
+  }, [user, isLoaded]);
 
   const menuItems = [
     { 
       icon: FaHome, 
-      label: "Dashboard", 
-      href: "/dashboard",
+      label: username ?? "Home", 
+      href: username ? `/${username}/c` : "/",
       gradient: "from-primary-500 to-primary-600"
     },
     { 
       icon: MdMessage, 
-      label: "Courses", 
+      label: "c", 
       expandable: true,
       gradient: "from-secondary-500 to-secondary-600"
     },
     { 
       icon: AiOutlinePlusCircle, 
       label: "New Course", 
-      href: "/new_course",
+      href: username ? `/${username}/new_course` : "/new_course",
       gradient: "from-accent-500 to-accent-600"
     },
-    { 
-      icon: MdAnalytics, 
-      label: "Analytics", 
-      href: "/analytics",
-      gradient: "from-purple-500 to-purple-600"
-    },
-    { 
-      icon: IoMdSettings, 
-      label: "Settings", 
-      href: "/settings",
-      gradient: "from-neutral-500 to-neutral-600"
-    },
+    // { 
+    //   icon: MdAnalytics, 
+    //   label: "profile", 
+    //   href: username ? `/${username}/profile` : "/profile",
+    //   gradient: "from-purple-500 to-purple-600"
+    // },
+    // { 
+    //   icon: IoMdSettings, 
+    //   label: "settings", 
+    //   href: "/settings",
+    //   gradient: "from-neutral-500 to-neutral-600"
+    // },
   ];
 
   const getCourses = async () => {
+    setLoading(true);
+    setError("");
     try {
-      setLoading(true);
       const response = await axios.get("/api/query/course");
-      
-      if (response.status !== 200) {
-        throw new Error("Failed to fetch courses. Please try again.");
-      }
-      
-      const jsonData = response.data.data;
 
-      if (!jsonData || jsonData.length === 0) {
-        return { status: "success", data: [], error: "" };
-      }
+      // Ensure JSON shape
+      const payload =
+        typeof response.data === "string"
+          ? JSON.parse(response.data)
+          : response.data;
 
-      return { status: "success", data: jsonData, error: "" };
+      const data: Course[] = Array.isArray(payload?.data)
+        ? payload.data
+        : [];
+
+      setCourses(data);
     } catch (err) {
-      console.error("Error fetching courses:", err.message);
-      return { status: "error", data: [], error: err.message };
+      const message =
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (err as any)?.response?.data?.message ||
+        (err as Error).message ||
+        "Failed to fetch courses";
+      console.error("Error fetching courses:", message);
+      setError(message);
+      setCourses([]);
     } finally {
       setLoading(false);
       setIsCoursesExpanded(true);
@@ -77,20 +117,12 @@ const Sidenav = () => {
   };
 
   useEffect(() => {
-    const fetchCourses = async () => {
-      const result = await getCourses();
-      if (result.status === "success") {
-        setCourses(result.data);
-      } else {
-        setError(result.error);
-      }
-    };
-
-    fetchCourses();
+    // Initial load
+    getCourses();
   }, []);
 
   useEffect(() => {
-    const handleMouseMove = (event) => {
+    const handleMouseMove = (event: MouseEvent) => {
       const mouseX = event.clientX;
       if (mouseX < 100 && !isHovered) {
         setIsExpanded(true);
@@ -276,13 +308,13 @@ const Sidenav = () => {
                       <div className="space-y-1">
                         {courses.map((course, idx) => (
                           <motion.div
-                            key={idx}
+                            key={course.id}
                             initial={{ opacity: 0, x: -20 }}
                             animate={{ opacity: 1, x: 0 }}
                             exit={{ opacity: 0, x: -20 }}
-                            transition={{ delay: idx * 0.1, duration: 0.2 }}
+                            transition={{ delay: idx * 0.05, duration: 0.2 }}
                           >
-                            <Link href={`/courses/${course.id}`}>
+                            <Link href={username ? `/${username}/c/${course.id}` : `/courses/${course.id}`}>
                               <div className="group flex items-center justify-between px-4 py-2 text-sm bg-neutral-100/30 dark:bg-neutral-800/30 rounded-lg hover:bg-neutral-100/50 dark:hover:bg-neutral-800/50 transition-all duration-300 cursor-pointer">
                                 <span className="text-gray-900 dark:text-gray-100 font-medium truncate">{course.title}</span>
                                 <motion.span
@@ -293,7 +325,7 @@ const Sidenav = () => {
                                   }`}
                                   whileHover={{ scale: 1.05 }}
                                 >
-                                  {course.status}
+                                  {course.status ?? "Unknown"}
                                 </motion.span>
                               </div>
                             </Link>

@@ -11,9 +11,6 @@ import {
 } from "react-icons/fa";
 import { 
   Sparkles, 
-  Zap, 
-  Shield, 
-  Target, 
   Brain,
   ArrowRight 
 } from "lucide-react";
