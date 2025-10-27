@@ -5,14 +5,14 @@ import { getBatchProjectsByBatchId } from "../actions/batch";
 import ProjectList from "../projects/ProjectList";
 import { Batch, Project } from "../shared/schema/Project";
 
-const BatchCard = ({ batch }: { batch: Batch }) => {
+const BatchCard = ({ userId, batch }: { userId : string, batch: Batch }) => {
   const [activeTab, setActiveTab] = useState<string | null>(null);
   const [projectDetails, setProjectDetails] = useState<any>(null);
 
   console.log(batch.projects);
   const fetchProjectDetails = async () => {
     try {
-      const response = await getBatchProjectsByBatchId(batch.id);
+      const response = await getBatchProjectsByBatchId(userId, batch.id);
       console.log(response);
       setProjectDetails(response);
     } catch (error) {

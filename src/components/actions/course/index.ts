@@ -31,3 +31,23 @@ export async function GetCoursesByName(userName : string){
     return await GetCoursesById(userId);
 }
 
+export async function GetCourseByID(userName : string, id : string){
+
+  const userId = await GetUserIdByName(userName);
+    if (!userId) {throw Error ("No user Id found")};
+
+  const response = await prisma.course.findUnique({
+    where: {
+      id: id,
+    },
+    select: {
+      id: true,
+      title: true,
+      status: true,
+    },
+  });
+  if (!response) {
+    throw new Error("Course not found in Course");
+  }
+  return response;
+}

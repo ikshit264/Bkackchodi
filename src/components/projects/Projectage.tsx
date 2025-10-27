@@ -49,7 +49,7 @@ const ProjectDetail = ({ project: initialProject }) => {
         }
     };
     fetchUser();
-    console.log(user)
+    // console.log(user)
   }, [userId]);
 
   useEffect(() => {
