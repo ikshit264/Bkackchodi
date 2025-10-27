@@ -3,8 +3,8 @@
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { FaHome, FaRobot } from "react-icons/fa";
-import { MdMessage, MdAnalytics } from "react-icons/md";
-import { IoMdSettings, IoIosArrowForward } from "react-icons/io";
+import { MdMessage} from "react-icons/md";
+import { IoIosArrowForward } from "react-icons/io";
 import { AiOutlinePlusCircle } from "react-icons/ai";
 import { RefreshCw, Sparkles } from "lucide-react";
 import Link from "next/link";
