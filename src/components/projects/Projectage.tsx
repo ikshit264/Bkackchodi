@@ -50,8 +50,11 @@ const ProjectDetail = ({ project: initialProject }) => {
     };
     fetchUser();
     console.log(user)
-    setSteps(initialProject.steps)
   }, [userId]);
+
+  useEffect(() => {
+    setSteps(initialProject.steps);
+  }, [initialProject.steps]);
 
   const getProjectStatus = useCallback(() => {
     if (!steps || steps.length === 0) return "Not Started";

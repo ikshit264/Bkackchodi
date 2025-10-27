@@ -2,8 +2,8 @@
 
 import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
-import { motion, AnimatePresence } from "framer-motion";
-import { ChevronLeft, ChevronRight, Users, Github, Linkedin, Twitter } from "lucide-react";
+import { motion } from "framer-motion";
+import { ChevronLeft, ChevronRight, Users } from "lucide-react";
 import { IoLogoInstagram } from "react-icons/io";
 import { FaSquareXTwitter } from "react-icons/fa6";
 import { BsLinkedin } from "react-icons/bs";
@@ -59,7 +59,6 @@ const MentorsSlider = () => {
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const [isPaused, setIsPaused] = useState(false);
   const [resetTimeout, setResetTimeout] = useState<NodeJS.Timeout | null>(null);
-  const [isAtEnd, setIsAtEnd] = useState(false);
   const [currentIndex, setCurrentIndex] = useState(0);
 
   // Check if we're at the end of the scroll
@@ -70,7 +69,6 @@ const MentorsSlider = () => {
       scrollRef.current.scrollLeft + scrollRef.current.clientWidth >=
       scrollRef.current.scrollWidth - 1;
 
-    setIsAtEnd(isEnd);
     return isEnd;
   };
 
@@ -204,7 +202,7 @@ const MentorsSlider = () => {
           </h2>
           
           <p className="text-xl text-neutral-600 dark:text-neutral-400 max-w-3xl mx-auto leading-relaxed">
-            The brilliant minds behind GitSmart's AI-powered learning platform
+            The brilliant minds behind GitSmart&apos;s AI-powered learning platform
           </p>
         </motion.div>
 

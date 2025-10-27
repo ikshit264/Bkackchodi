@@ -372,7 +372,6 @@ const ProjectCard = ({ project, onStartProject }: ProjectCardProps) => {
                       </h4>
                       <div className="space-y-3">
                         {steps.map((stepObj, index: number) => {
-                          const stepStatusConfig = getStatusConfig(stepObj.status);
                           return (
                             <motion.div
                               key={index}
