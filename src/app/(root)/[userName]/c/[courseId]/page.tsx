@@ -10,6 +10,7 @@ export default function Page() {
   const { userName, courseId } = useParams();
   const [Batches, setBatches] = useState(null);
   const [projectName, setProjectName] = useState("");
+  const [activeBatchId, setActiveBatchId] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchBatches = async () => {
@@ -27,14 +28,20 @@ export default function Page() {
   }
 
   return (
-    <div className="flex flex-col justify-around items-center min-h-screen bg-gray-100 p-4">
+    <div className="flex flex-col justify-around items-center min-h-screen p-0">
       <WindowPathLogger />
-      <h1 className="text-black text-7xl">{projectName}</h1>
+      <h1 className="text-black text-7xl text-gradient">{projectName.toUpperCase()}</h1>
       <div className="flex flex-wrap justify-center items-center gap-6">
         {Batches.batch
           .sort((a: Batch, b: Batch) => (a.number ?? 0) - (b.number ?? 0))
           .map((batch: Batch) => (
-            <BatchCard key={batch.id} batch={{...batch}} userId={userName as string}/>
+            <BatchCard 
+              key={batch.id} 
+              batch={{...batch}} 
+              userId={userName as string}
+              activeBatchId={activeBatchId}
+              setActiveBatchId={setActiveBatchId}
+            />
           ))}
       </div>
     </div>

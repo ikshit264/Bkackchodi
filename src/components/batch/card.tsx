@@ -5,11 +5,20 @@ import { getBatchProjectsByBatchId } from "../actions/batch";
 import ProjectList from "../projects/ProjectList";
 import { Batch, Project } from "../shared/schema/Project";
 
-const BatchCard = ({ userId, batch }: { userId : string, batch: Batch }) => {
-  const [activeTab, setActiveTab] = useState<string | null>(null);
+const BatchCard = ({ 
+  userId, 
+  batch, 
+  activeBatchId, 
+  setActiveBatchId 
+}: { 
+  userId: string; 
+  batch: Batch; 
+  activeBatchId: string | null;
+  setActiveBatchId: (id: string | null) => void;
+}) => {
   const [projectDetails, setProjectDetails] = useState<any>(null);
+  const isActive = activeBatchId === batch.id;
 
-  console.log(batch.projects);
   const fetchProjectDetails = async () => {
     try {
       const response = await getBatchProjectsByBatchId(userId, batch.id);
@@ -17,6 +26,15 @@ const BatchCard = ({ userId, batch }: { userId : string, batch: Batch }) => {
       setProjectDetails(response);
     } catch (error) {
       console.error("Error fetching project details:", error);
+    }
+  };
+
+  const handleClick = () => {
+    if (isActive) {
+      setActiveBatchId(null);
+    } else {
+      setActiveBatchId(batch.id);
+      fetchProjectDetails();
     }
   };
 
@@ -52,16 +70,13 @@ const BatchCard = ({ userId, batch }: { userId : string, batch: Batch }) => {
   };
 
   return (
-    <div className="z-100">
+    <div className="relative">
       <div
-        className="bg-white shadow-md rounded-lg p-4 m-2 w-72 border border-gray-300 text-center relative cursor-pointer z-100"
-        onClick={() => {
-          setActiveTab(batch.id);
-          fetchProjectDetails();
-        }}
+        className="bg-white dark:bg-neutral-800 shadow-md rounded-lg p-4 m-2 w-72 border border-gray-300 dark:border-neutral-700 text-center relative cursor-pointer"
+        onClick={handleClick}
       >
-        <h2 className="text-lg font-semibold text-black text-left w-full">
-          Batch {batch.number}
+        <h2 className="text-lg font-semibold text-black dark:text-gray-200 text-left w-full">
+          Module {batch.number + 1}
         </h2>
         {batch.projects && batch.projects.length > 0 &&
           batch.projects
@@ -69,7 +84,7 @@ const BatchCard = ({ userId, batch }: { userId : string, batch: Batch }) => {
             .map((project: any) => (
               <p
                 key={project.id}
-                className="text-gray-500 text-sm mt-2 truncate text-left ml-4 cursor-pointer"
+                className="text-gray-500 dark:text-gray-400 text-sm mt-2 truncate text-left ml-4 cursor-pointer"
               >
                 {project.title}
               </p>
@@ -80,7 +95,11 @@ const BatchCard = ({ userId, batch }: { userId : string, batch: Batch }) => {
         ></div>
       </div>
 
-      <ProjectList Batch={projectDetails} activeTab={activeTab} setActiveTab={setActiveTab} />
+      <ProjectList 
+        Batch={projectDetails} 
+        activeTab={isActive ? batch.id : null} 
+        setActiveTab={setActiveBatchId}
+      />
     </div>
   );
 };
