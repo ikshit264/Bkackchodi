@@ -161,11 +161,11 @@ const AiCall = ({
   };
 
   return (
-    <div className="min-h-screen w-full bg-gray-50 flex items-center justify-center p-6">
-      <div className="w-full max-w-4xl bg-white rounded-xl shadow-lg overflow-hidden">
-        <div className="bg-gradient-to-r from-blue-500 to-purple-500 px-8 py-6">
+    <div className="min-h-screen w-full flex items-center justify-center p-6">
+      <div className="w-full max-w-4xl bg-white dark:bg-neutral-800 rounded-xl shadow-lg overflow-hidden border border-neutral-200 dark:border-neutral-700">
+        <div className="bg-gradient-to-r from-blue-500 to-purple-500 dark:from-blue-600 dark:to-purple-600 px-8 py-6">
           <h2 className="text-4xl font-bold text-white">AI Assistant</h2>
-          <p className="text-white text-opacity-90 mt-1">
+          <p className="text-white text-opacity-90 dark:text-opacity-100 mt-1">
             Let AI assist you in generating personalized outputs
           </p>
           <div className="h-6 mt-2 font-mono text-white text-sm">
@@ -187,12 +187,12 @@ const AiCall = ({
             <div className="flex items-center justify-around gap-4">
 
               <div className="w-full">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Time Duration (in months)</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Time Duration (in months)</label>
                 <select
                   value={timeDuration}
                   onChange={(e) => setTimeDuration(e.target.value)}
                   disabled={loading}
-                  className="w-full p-3 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-400 focus:border-blue-400 bg-white text-gray-800"
+                  className="w-full p-3 rounded-md border border-gray-300 dark:border-neutral-600 focus:ring-2 focus:ring-blue-400 dark:focus:ring-blue-500 focus:border-blue-400 dark:focus:border-blue-500 bg-white dark:bg-neutral-700 text-gray-800 dark:text-gray-200"
                 >
                   <option value="">Select duration</option>
                   {[1, 2, 3, 4, 5, 6].map((month) => (
@@ -204,12 +204,12 @@ const AiCall = ({
               </div>
 
               <div className="w-full">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Difficulty</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Difficulty</label>
                 <select
                   value={level}
                   onChange={(e) => setLevel(e.target.value)}
                   disabled={loading}
-                  className="w-full p-3 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-400 focus:border-blue-400 bg-white text-gray-800"
+                  className="w-full p-3 rounded-md border border-gray-300 dark:border-neutral-600 focus:ring-2 focus:ring-blue-400 dark:focus:ring-blue-500 focus:border-blue-400 dark:focus:border-blue-500 bg-white dark:bg-neutral-700 text-gray-800 dark:text-gray-200"
                 >
                   <option value="Easy">Easy</option>
                   <option value="Medium">Medium</option>
@@ -220,19 +220,19 @@ const AiCall = ({
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Description</label>
               <textarea
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 disabled={loading}
                 rows={4}
                 placeholder="I have 2 days of React.js knowledge"
-                className="w-full p-3 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-400 focus:border-blue-400 text-gray-800 resize-none"
+                className="w-full p-3 rounded-md border border-gray-300 dark:border-neutral-600 focus:ring-2 focus:ring-blue-400 dark:focus:ring-blue-500 focus:border-blue-400 dark:focus:border-blue-500 text-gray-800 dark:text-gray-200 bg-white dark:bg-neutral-700 resize-none placeholder-gray-400 dark:placeholder-gray-500"
               />
             </div>
 
             {error && (
-              <div className="bg-red-100 text-red-700 px-4 py-3 rounded-md border border-red-400">
+              <div className="bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 px-4 py-3 rounded-md border border-red-400 dark:border-red-800">
                 {error}
               </div>
             )}
@@ -282,10 +282,10 @@ const AiCall = ({
 
 const InputField = ({ label, ...props }) => (
   <div>
-    <label className="block text-sm font-medium text-gray-700 mb-1">{label}</label>
+    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{label}</label>
     <input
       {...props}
-      className="w-full p-3 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-400 focus:border-blue-400 text-gray-800"
+      className="w-full p-3 rounded-md border border-gray-300 dark:border-neutral-600 focus:ring-2 focus:ring-blue-400 dark:focus:ring-blue-500 focus:border-blue-400 dark:focus:border-blue-500 text-gray-800 dark:text-gray-200 bg-white dark:bg-neutral-700 placeholder-gray-400 dark:placeholder-gray-500"
     />
   </div>
 );

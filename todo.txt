@@ -1,0 +1,5 @@
+1. Design the whole website without changing the implementation of the project. 
+2. Make sure it follows all the principle of design, visualization and typography. 
+3. Make sure it not changes the functionality of the code it should only change the UI.
+4. Maintain same UI across all the pages of the website
+5. Make proper use of colors and typography best suitable for "AI Course Roadmap Automation" theme
