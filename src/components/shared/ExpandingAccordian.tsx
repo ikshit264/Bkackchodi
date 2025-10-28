@@ -241,11 +241,7 @@ const ExpandingAccordion = ({ items }: { items: Project[] }) => {
                                     Batch: {item.batchId}
                                   </span>
                                 )}
-                                {item.position !== undefined && (
-                                  <span className="px-3 py-1 bg-teal-100 text-teal-800 rounded-full text-xs font-medium">
-                                    Position: {item.position}
-                                  </span>
-                                )}
+                                
                               </div>
                             </div>
 

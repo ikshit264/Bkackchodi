@@ -5,6 +5,7 @@ import { useParams } from "next/navigation";
 import CourseCard from "../../../../components/course/card";
 import Link from "next/link";
 import { GetCoursesByName } from "../../../../components/actions/course";
+import Loading from "../../loading";
 
 const CoursesPage = () => {
   const [courses, setCourses] = useState([]);
@@ -16,8 +17,9 @@ const CoursesPage = () => {
     const fetchCourses = async () => {
       if (userName) {
         try {
-          console.log("Username: lkijsnvienvifensfhesihflkewsfnihsifsvjhshefsl: ",userName)
+          // console.log("Username: lkijsnvienvifensfhesihflkewsfnihsifsvjhshefsl: ",userName)
           const fetchedCourses = await GetCoursesByName(userName);
+          console.log("Fetched Courses: ", fetchedCourses);
           setCourses(fetchedCourses);
         } catch (error) {
           console.error("Error fetching courses:", error);
@@ -33,7 +35,7 @@ const CoursesPage = () => {
   }, [userName]);
 
   if (loading) {
-    return <div className="text-center">Loading...</div>;
+    return <Loading/>;
   }
 
   if (!courses || courses.length === 0) {
@@ -47,7 +49,7 @@ const CoursesPage = () => {
       {courses.map((course) => (
         <div key={course.id}>
           <Link href={`/${userName}/c/${course.id}`}>
-            <CourseCard title={course.title} status={course.status} />
+            <CourseCard title={course.title} status={course.status} Id={course.id}/>
           </Link>
         </div>
       ))}

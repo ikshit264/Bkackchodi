@@ -8,12 +8,13 @@ import BatchList from "../../../components/courses/BatchList";
 import { CreateIssue } from "../../../components/courses/GithubFunctions";
 import { UserId as fetchUserId } from "../../../utils/userId";
 import { GetUserByUserId } from "../../../components/actions/user";
+import Loading from "../../(root)/loading";
 
 const Page = () => {
   const params = useParams<{ id: string }>();
   const { id } = params;
   const userId = fetchUserId();
-  const [User, setUser] = useState(null)
+  const [User, setUser] = useState(null);
   const [errors, setErrors] = useState("");
   const [course, setCourse] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -26,7 +27,6 @@ const Page = () => {
     }
     fetchUser();
   }, [userId]);
-  
 
   useEffect(() => {
     const getCourse = async () => {
@@ -87,7 +87,7 @@ const Page = () => {
         learning_objectives: targetProject.learningObjectives,
       });
 
-      console.log(response.data)
+      console.log(response.data);
 
       if (response.status !== 200)
         throw new Error("Failed to fetch project data.");
@@ -135,7 +135,9 @@ const Page = () => {
     }
   };
 
-  if (loading) return <div>Loading...</div>;
+  if (loading) {
+    return <Loading />;
+  }
   if (errors) return <div className="text-red-500">Error: {errors}</div>;
 
   return (

@@ -5,6 +5,7 @@ import { useParams } from "next/navigation";
 import Image from "next/image";
 import { GetUserByUserName } from "../../../../components/actions/user";
 import ProfileForm from "../../../../components/shared/ProfileForm";
+import Loading from "../../loading";
 
 const ProfilePage = () => {
   const [user, setUser] = useState(null);
@@ -32,7 +33,7 @@ const ProfilePage = () => {
   }, [userName]);
 
   if (loading) {
-    return <div className="flex justify-center items-center min-h-screen">Loading...</div>;
+    return <Loading />;
   }
 
   if (!user) {
