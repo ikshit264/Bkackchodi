@@ -23,8 +23,9 @@ const ExpandingAccordion = ({ items }: { items: Project[] }) => {
   const windowHeight = window.innerHeight;
   const params = useParams();
 
+  console.log("Items in ExpandingAccordion:", items);
+
   const getExpandVariants = (index: number) => {
-    const totalItems = items.length;
     const collapsedHeight = 70;
     const expandedHeight = windowHeight - 150;
     return {
@@ -44,7 +45,7 @@ const ExpandingAccordion = ({ items }: { items: Project[] }) => {
         return <CheckCircle2 className="w-4 h-4 mr-1" />;
       case "in progress":
         return <Clock className="w-4 h-4 mr-1" />;
-      case "pending":
+      case "not started":
         return <AlertCircle className="w-4 h-4 mr-1" />;
       default:
         return <ChevronRight className="w-4 h-4 mr-1" />;
@@ -99,7 +100,7 @@ const ExpandingAccordion = ({ items }: { items: Project[] }) => {
         return "bg-green-100 text-green-800 border-green-200";
       case "in progress":
         return "bg-blue-100 text-blue-800 border-blue-200";
-      case "pending":
+      case "not started":
         return "bg-yellow-100 text-yellow-800 border-yellow-200";
       default:
         return "bg-gray-100 text-gray-800 border-gray-200";
@@ -287,7 +288,7 @@ const ExpandingAccordion = ({ items }: { items: Project[] }) => {
                                           {step.status === "in progress" && (
                                             <Clock className="w-5 h-5 text-blue-600 mr-2" />
                                           )}
-                                          {step.status === "pending" && (
+                                          {step.status === "not started" && (
                                             <AlertCircle className="w-5 h-5 text-amber-600 mr-2" />
                                           )}
                                           <h4 className="font-medium text-black">

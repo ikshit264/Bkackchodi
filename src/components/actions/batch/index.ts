@@ -116,6 +116,7 @@ export async function getBatchProjectsByBatchId(userId: string, batchId: string)
             title: true,
             level: true,
             position: true,
+            steps : true,
             status: true,
             description: true,
             learningObjectives: true
@@ -137,6 +138,7 @@ export async function getBatchProjectsByBatchId(userId: string, batchId: string)
         title: project.title,
         level: project.level as 'Beginner' | 'Intermediate' | 'Advanced' | 'Expert' | 'Unknown',
         position: project.position,
+        steps: project.steps,
         status: project.status || undefined,
         description: project.description || undefined,
         learningObjectives: project.learningObjectives as string[] || []

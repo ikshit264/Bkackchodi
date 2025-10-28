@@ -3,6 +3,7 @@ import { ChatPromptTemplate } from "@langchain/core/prompts";
 import { NextResponse } from "next/server";
 import { StringOutputParser } from "@langchain/core/output_parsers";
 import { PROMPT_PROJECT } from "../../../../utils/prompt";
+import { prisma } from "../../../../../lib/prisma";
 
 const llm = new ChatGroq({
   model: "llama-3.3-70b-versatile",
@@ -22,7 +23,7 @@ const chain = prompt.pipe(llm).pipe(output_parsers);
 
 export async function POST(req: Request) {
   try {
-    const { topic, learning_objectives } = await req.json();
+    const { topic, learning_objectives, projectId } = await req.json();
 
     const res = await chain.invoke({
       topic,
@@ -30,6 +31,20 @@ export async function POST(req: Request) {
     });
 
     const { jsonObject, text } = separateJSONandText(res);
+
+    await prisma.project.update({
+      where: {
+        id: projectId,
+      },
+      data: {
+        status : "in progress",
+        batch : {
+          update : {
+            status : "in progress"
+          }
+        }
+      },
+    })
 
     return NextResponse.json({ jsonObject, text });
 
