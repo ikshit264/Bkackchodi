@@ -1,7 +1,7 @@
 # 🚀 Git-Smart  
 **_Smart Learning. Seamless Automation._**
 
-[🔗 Live Demo](https://gitsmart.vercel.app/) | [📂 GitHub Repo](https://github.com/tusharpamnani/hackbyte)
+[🔗 Live Demo](https://gitsmart.vercel.app/) | [📂 GitHub Repo](https://github.com/ikshit264/Bkackchodi)
 
 ---
 
