@@ -43,7 +43,7 @@ Follow these steps to set up and run Git-Smart locally:
 ### 1. **Clone the Repository**
 
 ```bash
-git clone https://github.com/tusharpamnani/hackbyte.git
+git clone https://github.com/ikshit264/Bkackchodi
 cd hackbyte
 ```
 
