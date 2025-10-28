@@ -22,7 +22,7 @@ const BatchCard = ({
   const fetchProjectDetails = async () => {
     try {
       const response = await getBatchProjectsByBatchId(userId, batch.id);
-      console.log(response);
+      console.log("response from batch", response);
       setProjectDetails(response);
     } catch (error) {
       console.error("Error fetching project details:", error);

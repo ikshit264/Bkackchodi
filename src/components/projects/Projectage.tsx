@@ -116,6 +116,7 @@ const ProjectDetail = ({ project: initialProject }) => {
       const response = await axios.post("/api/ai/project", {
         topic: project.title,
         learning_objectives: project.learningObjectives,
+        projectId : project.id,
       });
 
       if (response.status !== 200) {
