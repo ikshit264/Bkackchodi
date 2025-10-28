@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { GetProjectByProjectId } from "../../../../../components/actions/project";
 import ProjectPage from "../../../../../components/projects/Projectage";
+import Loading from "../../../loading";
 
 const ProjectDetailsPage = () => {
   const [project, setProject] = useState(null);
@@ -31,11 +32,13 @@ const ProjectDetailsPage = () => {
   }, [projectId]);
 
   if (loading) {
-    return <div className="text-center">Loading...</div>;
+    return <Loading />;
   }
 
   if (!project) {
-    return <div className="text-center text-red-500 text-lg">Project not found</div>;
+    return (
+      <div className="text-center text-red-500 text-lg">Project not found</div>
+    );
   }
 
   return (

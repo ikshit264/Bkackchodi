@@ -1,8 +1,11 @@
-import React from "react";
+import React, {useEffect, useState} from "react";
 import { motion } from "framer-motion";
 import { BookOpen, Clock, CheckCircle, XCircle, AlertCircle } from "lucide-react";
+import axios from "axios";
 
-const CourseCard = ({ title, status }: { title: string; status: string }) => {
+const CourseCard = ({ title, status, Id }: { title: string; status: string, Id : string }) => {
+
+  const [InProgress, setInProgress] = useState(0);
   const getStatusConfig = (status: string) => {
     switch (status.toLowerCase()) {
       case "completed":
@@ -33,6 +36,16 @@ const CourseCard = ({ title, status }: { title: string; status: string }) => {
     }
   };
 
+  useEffect(() => {
+    const runit = async () => {
+      const res = await axios.post('/api/query/course/progress', { courseId: Id });
+      console.log(res.data);
+      setInProgress(res.data.percentages.inProgress);
+    };
+  
+    runit();
+  }, [Id])
+  
   const statusConfig = getStatusConfig(status);
 
   return (
@@ -88,14 +101,14 @@ const CourseCard = ({ title, status }: { title: string; status: string }) => {
           <div className="flex items-center justify-between mb-2">
             <span className="text-sm text-neutral-600 dark:text-neutral-400">Progress</span>
             <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
-              {status === "completed" ? "100%" : status === "not started" ? "0%" : "45%"}
+              {status === "completed" ? "100%" : InProgress + "%"}
             </span>
           </div>
           <div className="w-full bg-neutral-100 dark:bg-neutral-800 rounded-full h-2">
             <motion.div
               initial={{ width: 0 }}
               whileInView={{ 
-                width: status === "completed" ? "100%" : status === "not started" ? "0%" : "45%"
+                width: status === "completed" ? "100%" : InProgress + "%"
               }}
               transition={{ duration: 1, delay: 0.2 }}
               viewport={{ once: true }}

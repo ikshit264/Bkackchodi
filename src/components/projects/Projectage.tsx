@@ -16,6 +16,7 @@ import { GetUserByUserId } from "../actions/user";
 import { GetProjectByProjectId } from "../actions/project";
 import { CreateIssue } from "../courses/GithubFunctions";
 import GithubPart from "./GithubPart";
+import Loading from "../../app/(root)/loading";
 
 const ProjectDetail = ({ project: initialProject }) => {
   const [project, setProject] = useState(initialProject);
@@ -33,20 +34,18 @@ const ProjectDetail = ({ project: initialProject }) => {
   const [loading, setLoading] = useState(false);
   const userId = fetchUserId();
   const [user, setUser] = useState(null);
-  const [activeTab, setActiveTab] = useState("projects")
-  
+  const [activeTab, setActiveTab] = useState("projects");
+
   useEffect(() => {
     const fetchUser = async () => {
-      if (userId !== null)
-        console.log("userId", userId);
-        try {
-          const fetchedUser = await GetUserByUserId(userId);
-          if (fetchedUser)
-            setUser(fetchedUser);
-          console.log("fetchedUser", fetchedUser)
-        } catch (error) {
-          console.error("Error fetching user:", error);
-        }
+      if (userId !== null) console.log("userId", userId);
+      try {
+        const fetchedUser = await GetUserByUserId(userId);
+        if (fetchedUser) setUser(fetchedUser);
+        console.log("fetchedUser", fetchedUser);
+      } catch (error) {
+        console.error("Error fetching user:", error);
+      }
     };
     fetchUser();
     // console.log(user)
@@ -79,7 +78,10 @@ const ProjectDetail = ({ project: initialProject }) => {
 
     // Allow changing from "not started" to "in progress" for the first step
     if (updatedSteps[stepIndex].status === "not started") {
-      if (stepIndex === 0 || updatedSteps[stepIndex - 1].status === "completed") {
+      if (
+        stepIndex === 0 ||
+        updatedSteps[stepIndex - 1].status === "completed"
+      ) {
         updatedSteps[stepIndex].status = "in progress";
       } else {
         return; // Can't start a step if previous step isn't completed
@@ -116,7 +118,7 @@ const ProjectDetail = ({ project: initialProject }) => {
       const response = await axios.post("/api/ai/project", {
         topic: project.title,
         learning_objectives: project.learningObjectives,
-        projectId : project.id,
+        projectId: project.id,
       });
 
       if (response.status !== 200) {
@@ -245,31 +247,26 @@ const ProjectDetail = ({ project: initialProject }) => {
     <div className="flex justify-center items-center min-h-screen p-4">
       <div className="w-full max-w-4xl space-y-6">
         {/* Loading Overlay */}
-        {loading && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white p-6 rounded-lg shadow-lg flex items-center space-x-3">
-              <Loader size={24} className="animate-spin text-blue-600" />
-              <p className="text-gray-800 font-medium">Loading...</p>
-            </div>
-          </div>
-        )}
+        {loading && <Loading />}
 
         <div className="flex space-x-4 mb-4">
           <button
             onClick={() => setActiveTab("projects")}
-            className={`px-4 py-2 rounded-lg font-medium ${activeTab === "projects"
-              ? "bg-blue-600 text-white"
-              : "bg-gray-200 text-gray-700"
-              }`}
+            className={`px-4 py-2 rounded-lg font-medium ${
+              activeTab === "projects"
+                ? "bg-blue-600 text-white"
+                : "bg-gray-200 text-gray-700"
+            }`}
           >
             Projects
           </button>
           <button
             onClick={() => setActiveTab("github")}
-            className={`px-4 py-2 rounded-lg font-medium ${activeTab === "github"
-              ? "bg-blue-600 text-white"
-              : "bg-gray-200 text-gray-700"
-              }`}
+            className={`px-4 py-2 rounded-lg font-medium ${
+              activeTab === "github"
+                ? "bg-blue-600 text-white"
+                : "bg-gray-200 text-gray-700"
+            }`}
           >
             GitHub Evaluation
           </button>
@@ -310,7 +307,7 @@ const ProjectDetail = ({ project: initialProject }) => {
           </div>
 
           {/* Project Details Section */}
-          {activeTab === "projects" ?
+          {activeTab === "projects" ? (
             <div className="p-6">
               <div className="mb-6">
                 <div
@@ -329,7 +326,7 @@ const ProjectDetail = ({ project: initialProject }) => {
                 {isObjectivesExpanded && (
                   <div className="mt-3 pl-2 border-l-2 border-blue-300">
                     {project.learningObjectives &&
-                      project.learningObjectives.length > 0 ? (
+                    project.learningObjectives.length > 0 ? (
                       <ul className="space-y-2">
                         {project.learningObjectives.map((objective, index) => (
                           <li key={index} className="flex items-start">
@@ -380,10 +377,11 @@ const ProjectDetail = ({ project: initialProject }) => {
                             />
                             <div className="flex-grow">
                               <p
-                                className={`text-lg font-semibold text-gray-800 ${step.status === "completed"
-                                  ? "line-through"
-                                  : ""
-                                  }`}
+                                className={`text-lg font-semibold text-gray-800 ${
+                                  step.status === "completed"
+                                    ? "line-through"
+                                    : ""
+                                }`}
                               >
                                 {String(step.stepTitle.stepTitle)}
                               </p>
@@ -419,18 +417,20 @@ const ProjectDetail = ({ project: initialProject }) => {
                                   Resources:
                                 </h3>
                                 <ul className="list-disc list-inside text-blue-500">
-                                  {step.stepTitle.resources.map((resource, idx) => (
-                                    <li key={idx}>
-                                      <a
-                                        href={resource.url}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="underline"
-                                      >
-                                        {resource.title}
-                                      </a>
-                                    </li>
-                                  ))}
+                                  {step.stepTitle.resources.map(
+                                    (resource, idx) => (
+                                      <li key={idx}>
+                                        <a
+                                          href={resource.url}
+                                          target="_blank"
+                                          rel="noopener noreferrer"
+                                          className="underline"
+                                        >
+                                          {resource.title}
+                                        </a>
+                                      </li>
+                                    )
+                                  )}
                                 </ul>
                               </div>
                             )}
@@ -441,7 +441,9 @@ const ProjectDetail = ({ project: initialProject }) => {
                 </div>
               )}
             </div>
-            : <GithubPart projectId={project.id} />}
+          ) : (
+            <GithubPart projectId={project.id} />
+          )}
         </div>
 
         {/* Save Progress Button - Only show if we have steps */}

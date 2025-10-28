@@ -3,10 +3,10 @@
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { FaHome, FaRobot } from "react-icons/fa";
-import { MdMessage} from "react-icons/md";
-import { IoIosArrowForward } from "react-icons/io";
+import { MdMessage } from "react-icons/md";
+import { IoIosArrowForward, IoIosArrowBack } from "react-icons/io";
 import { AiOutlinePlusCircle } from "react-icons/ai";
-import { RefreshCw, Sparkles } from "lucide-react";
+import { RefreshCw, Sparkles, Lock } from "lucide-react";
 import Link from "next/link";
 import axios from "axios";
 import { useUser } from "@clerk/nextjs";
@@ -22,6 +22,7 @@ const Sidenav = () => {
   const { user, isLoaded } = useUser();
   const [username, setUsername] = useState<string | null>(null);
   const [isExpanded, setIsExpanded] = useState(false);
+  const [isLocked, setIsLocked] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
   const [isCoursesExpanded, setIsCoursesExpanded] = useState(false);
   const [courses, setCourses] = useState<Course[]>([]);
@@ -38,7 +39,6 @@ const Sidenav = () => {
           setUsername(null);
           return;
         }
-        // GetUserByUserId expected to return an object with userName
         const fetched = await GetUserByUserId(user.id);
         const name = fetched.userName;
         setUsername(name ?? null);
@@ -52,36 +52,24 @@ const Sidenav = () => {
   }, [user, isLoaded]);
 
   const menuItems = [
-    { 
-      icon: FaHome, 
-      label: username ?? "Home", 
+    {
+      icon: FaHome,
+      label: username ?? "Home",
       href: username ? `/${username}/c` : "/",
-      gradient: "from-primary-500 to-primary-600"
+      gradient: "from-primary-500 to-primary-600",
     },
-    { 
-      icon: MdMessage, 
-      label: "Courses", 
+    {
+      icon: MdMessage,
+      label: "Courses",
       expandable: true,
-      gradient: "from-secondary-500 to-secondary-600"
+      gradient: "from-secondary-500 to-secondary-600",
     },
-    { 
-      icon: AiOutlinePlusCircle, 
-      label: "New Course", 
+    {
+      icon: AiOutlinePlusCircle,
+      label: "New Course",
       href: username ? `/${username}/new_course` : "/new_course",
-      gradient: "from-accent-500 to-accent-600"
+      gradient: "from-accent-500 to-accent-600",
     },
-    // { 
-    //   icon: MdAnalytics, 
-    //   label: "profile", 
-    //   href: username ? `/${username}/profile` : "/profile",
-    //   gradient: "from-purple-500 to-purple-600"
-    // },
-    // { 
-    //   icon: IoMdSettings, 
-    //   label: "settings", 
-    //   href: "/settings",
-    //   gradient: "from-neutral-500 to-neutral-600"
-    // },
   ];
 
   const getCourses = async () => {
@@ -90,15 +78,12 @@ const Sidenav = () => {
     try {
       const response = await axios.get("/api/query/course");
 
-      // Ensure JSON shape
       const payload =
         typeof response.data === "string"
           ? JSON.parse(response.data)
           : response.data;
 
-      const data: Course[] = Array.isArray(payload?.data)
-        ? payload.data
-        : [];
+      const data: Course[] = Array.isArray(payload?.data) ? payload.data : [];
 
       setCourses(data);
     } catch (err) {
@@ -117,16 +102,18 @@ const Sidenav = () => {
   };
 
   useEffect(() => {
-    // Initial load
     getCourses();
   }, []);
 
   useEffect(() => {
+    // Only respond to mouse movement if not locked
+    if (isLocked) return;
+
     const handleMouseMove = (event: MouseEvent) => {
       const mouseX = event.clientX;
       if (mouseX < 100 && !isHovered) {
         setIsExpanded(true);
-      } else if (mouseX > 200 && !isHovered) {
+      } else if (mouseX > 280 && !isHovered) {
         setIsExpanded(false);
       }
     };
@@ -135,59 +122,124 @@ const Sidenav = () => {
     return () => {
       window.removeEventListener("mousemove", handleMouseMove);
     };
-  }, [isHovered]);
+  }, [isHovered, isLocked]);
+
+  const toggleLock = () => {
+    setIsLocked(!isLocked);
+    if (!isLocked) {
+      setIsExpanded(true);
+    }
+  };
 
   return (
     <motion.nav
       initial={{ x: -300 }}
-      animate={{ x: 0 }}
-      transition={{ duration: 0.5, ease: "easeOut" }}
+      animate={{ 
+        x: 0,
+        width: isExpanded ? 288 : 88 // 72 * 4 = 288px, 22 * 4 = 88px
+      }}
+      transition={{ 
+        x: { duration: 0.5, ease: "easeOut" },
+        width: { duration: 0.4, ease: [0.4, 0, 0.2, 1] }
+      }}
       onMouseEnter={() => {
-        setIsHovered(true);
-        setIsExpanded(true);
+        if (!isLocked) {
+          setIsHovered(true);
+          setIsExpanded(true);
+        }
       }}
       onMouseLeave={() => {
-        setIsHovered(false);
-        setIsExpanded(false);
+        if (!isLocked) {
+          setIsHovered(false);
+          setIsExpanded(false);
+        }
       }}
-      className={`fixed z-[999] left-0 top-0 h-full glass-dark transition-all duration-500 ease-in-out ${
-        isExpanded ? "w-72" : "w-22"
-      }`}
+      className="fixed z-[999] left-0 top-0 h-full glass-dark"
     >
       <div className="flex flex-col h-full py-6">
-        {/* Logo Section */}
-        <motion.div 
+        {/* Logo Section with Lock Button */}
+        <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
           className="px-6 mb-8"
         >
-          <div className="flex items-center space-x-3">
+          <div className="flex items-center ml-1 space-x-3">
             <div className="w-10 h-10 bg-gradient-to-br from-primary-500 to-secondary-500 rounded-xl flex items-center justify-center shadow-glow">
-              <FaRobot className="w-6 h-6 text-white" />
+              <FaRobot className="w-full text-white" />
             </div>
-            <AnimatePresence>
+            <AnimatePresence mode="wait">
               {isExpanded && (
                 <motion.div
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -20 }}
-                  transition={{ duration: 0.3 }}
+                  initial={{ opacity: 0, width: 0 }}
+                  animate={{ opacity: 1, width: "auto" }}
+                  exit={{ opacity: 0, width: 0 }}
+                  transition={{ duration: 0.3, ease: "easeInOut" }}
+                  className="flex-1 overflow-hidden"
                 >
-                  <h1 className="text-xl font-display font-bold text-gradient">
+                  <h1 className="text-xl font-display font-bold text-gradient whitespace-nowrap">
                     GitSmart
                   </h1>
-                  <p className="text-xs text-neutral-600 dark:text-neutral-400">AI Course Automation</p>
+                  <p className="text-xs text-neutral-600 dark:text-neutral-400 whitespace-nowrap">
+                    AI Course Automation
+                  </p>
                 </motion.div>
               )}
             </AnimatePresence>
           </div>
+          
+          {/* Lock/Unlock Button */}
+          <motion.button
+            initial={{ opacity: 0, x: -10 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.2, delay: 0.1 }}
+            onClick={toggleLock}
+            className="mt-4 ml-1 flex items-center space-x-2 px-3 py-2 rounded-lg bg-neutral-100/50 dark:bg-neutral-800/50 hover:bg-neutral-200/50 dark:hover:bg-neutral-700/50 transition-all duration-200 group"
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+          >
+            {isLocked ? (
+              <>
+                <IoIosArrowBack size={16} className="text-neutral-600 dark:text-neutral-400 group-hover:text-neutral-800 dark:group-hover:text-neutral-200 transition-colors" />
+                <AnimatePresence mode="wait">
+                  {isExpanded && (
+                    <motion.span
+                      initial={{ opacity: 0, width: 0 }}
+                      animate={{ opacity: 1, width: "auto" }}
+                      exit={{ opacity: 0, width: 0 }}
+                      transition={{ duration: 0.3, ease: "easeInOut" }}
+                      className="text-xs font-medium text-neutral-600 dark:text-neutral-400 group-hover:text-neutral-800 dark:group-hover:text-neutral-200 transition-colors whitespace-nowrap overflow-hidden"
+                    >
+                      Collapse
+                    </motion.span>
+                  )}
+                </AnimatePresence>
+              </>
+            ) : (
+              <>
+                <Lock size={14} className="text-neutral-600 dark:text-neutral-400 group-hover:text-neutral-800 dark:group-hover:text-neutral-200 transition-colors" />
+                <AnimatePresence mode="wait">
+                  {isExpanded && (
+                    <motion.span
+                      initial={{ opacity: 0, width: 0 }}
+                      animate={{ opacity: 1, width: "auto" }}
+                      exit={{ opacity: 0, width: 0 }}
+                      transition={{ duration: 0.3, ease: "easeInOut" }}
+                      className="text-xs font-medium text-neutral-600 dark:text-neutral-400 group-hover:text-neutral-800 dark:group-hover:text-neutral-200 transition-colors whitespace-nowrap overflow-hidden"
+                    >
+                      Lock sidebar
+                    </motion.span>
+                  )}
+                </AnimatePresence>
+              </>
+            )}
+          </motion.button>
         </motion.div>
 
         {/* Menu Items */}
-        <div className="flex-1 px-4 space-y-2">
+        <div className="flex-1 px-4 space-y-2 overflow-y-auto overflow-x-hidden">
           {menuItems.map((item, index) => (
-            <motion.div 
+            <motion.div
               key={index}
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
@@ -200,26 +252,29 @@ const Sidenav = () => {
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                 >
-                  {/* Background gradient on hover */}
-                  <div className={`absolute inset-0 bg-gradient-to-r ${item.gradient} opacity-0 group-hover:opacity-10 transition-opacity duration-300 rounded-xl`} />
-                  
-                  <div className={`w-8 h-8 rounded-lg bg-gradient-to-r ${item.gradient} flex items-center justify-center shadow-medium`}>
+                  <div
+                    className={`absolute inset-0 bg-gradient-to-r ${item.gradient} opacity-0 group-hover:opacity-10 transition-opacity duration-300 rounded-xl`}
+                  />
+
+                  <div
+                    className={`w-8 h-8 rounded-lg bg-gradient-to-r ${item.gradient} flex items-center justify-center shadow-medium flex-shrink-0`}
+                  >
                     <item.icon size={18} className="text-white" />
                   </div>
-                  
-                  <AnimatePresence>
+
+                  <AnimatePresence mode="wait">
                     {isExpanded && (
                       <motion.div
-                        initial={{ opacity: 0, x: -20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        exit={{ opacity: 0, x: -20 }}
-                        transition={{ duration: 0.3 }}
-                        className="ml-4 flex-1 flex items-center justify-between"
+                        initial={{ opacity: 0, width: 0 }}
+                        animate={{ opacity: 1, width: "auto" }}
+                        exit={{ opacity: 0, width: 0 }}
+                        transition={{ duration: 0.3, ease: "easeInOut" }}
+                        className="ml-4 flex-1 flex items-center justify-between overflow-hidden"
                       >
-                        <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                        <span className="text-sm font-medium text-gray-900 dark:text-gray-100 whitespace-nowrap">
                           {item.label}
                         </span>
-                        <div className="flex items-center space-x-2">
+                        <div className="flex items-center space-x-2 flex-shrink-0 ml-2">
                           <motion.button
                             onClick={(e) => {
                               e.stopPropagation();
@@ -229,13 +284,19 @@ const Sidenav = () => {
                             transition={{ duration: 1 }}
                             className="p-1 rounded-lg hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors"
                           >
-                            <RefreshCw size={16} className="text-neutral-600 dark:text-neutral-400" />
+                            <RefreshCw
+                              size={16}
+                              className="text-neutral-600 dark:text-neutral-400"
+                            />
                           </motion.button>
                           <motion.div
                             animate={{ rotate: isCoursesExpanded ? 90 : 0 }}
                             transition={{ duration: 0.2 }}
                           >
-                            <IoIosArrowForward size={16} className="text-neutral-600 dark:text-neutral-400" />
+                            <IoIosArrowForward
+                              size={16}
+                              className="text-neutral-600 dark:text-neutral-400"
+                            />
                           </motion.div>
                         </div>
                       </motion.div>
@@ -249,21 +310,23 @@ const Sidenav = () => {
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
                   >
-                    {/* Background gradient on hover */}
-                    <div className={`absolute inset-0 bg-gradient-to-r ${item.gradient} opacity-0 group-hover:opacity-10 transition-opacity duration-300 rounded-xl`} />
-                    
-                    <div className={`w-8 h-8 rounded-lg bg-gradient-to-r ${item.gradient} flex items-center justify-center shadow-medium`}>
+                    <div
+                      className={`absolute inset-0 bg-gradient-to-r ${item.gradient} opacity-0 group-hover:opacity-10 transition-opacity duration-300 rounded-xl`}
+                    />
+
+                    <div
+                      className={`w-8 h-8 rounded-lg bg-gradient-to-r ${item.gradient} flex items-center justify-center shadow-medium flex-shrink-0`}
+                    >
                       <item.icon size={18} className="text-white" />
                     </div>
-                    
-                    <AnimatePresence>
+                    <AnimatePresence mode="wait">
                       {isExpanded && (
                         <motion.span
-                          initial={{ opacity: 0, x: -20 }}
-                          animate={{ opacity: 1, x: 0 }}
-                          exit={{ opacity: 0, x: -20 }}
-                          transition={{ duration: 0.3 }}
-                          className="ml-4 text-sm font-medium text-gray-900 dark:text-gray-100"
+                          initial={{ opacity: 0, width: 0 }}
+                          animate={{ opacity: 1, width: "auto" }}
+                          exit={{ opacity: 0, width: 0 }}
+                          transition={{ duration: 0.3, ease: "easeInOut" }}
+                          className="ml-4 text-sm font-medium text-gray-900 dark:text-gray-100 whitespace-nowrap overflow-hidden"
                         >
                           {item.label}
                         </motion.span>
@@ -287,11 +350,17 @@ const Sidenav = () => {
                       <div className="flex items-center space-x-2 px-4 py-2">
                         <motion.div
                           animate={{ rotate: 360 }}
-                          transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                          transition={{
+                            duration: 1,
+                            repeat: Infinity,
+                            ease: "linear",
+                          }}
                         >
                           <RefreshCw size={16} className="text-primary-500" />
                         </motion.div>
-                        <p className="text-sm text-neutral-600 dark:text-neutral-400">Loading courses...</p>
+                        <p className="text-sm text-neutral-600 dark:text-neutral-400">
+                          Loading courses...
+                        </p>
                       </div>
                     ) : error ? (
                       <div className="px-4 py-2">
@@ -314,14 +383,24 @@ const Sidenav = () => {
                             exit={{ opacity: 0, x: -20 }}
                             transition={{ delay: idx * 0.05, duration: 0.2 }}
                           >
-                            <Link href={username ? `/${username}/c/${course.id}` : `/courses/${course.id}`}>
+                            <Link
+                              href={
+                                username
+                                  ? `/${username}/c/${course.id}`
+                                  : `/courses/${course.id}`
+                              }
+                            >
                               <div className="group flex items-center justify-between px-4 py-2 text-sm bg-neutral-100/30 dark:bg-neutral-800/30 rounded-lg hover:bg-neutral-100/50 dark:hover:bg-neutral-800/50 transition-all duration-300 cursor-pointer">
-                                <span className="text-gray-900 dark:text-gray-100 font-medium truncate">{course.title}</span>
+                                <span className="text-gray-900 dark:text-gray-100 font-medium truncate">
+                                  {course.title}
+                                </span>
                                 <motion.span
-                                  className={`text-xs px-2 py-1 rounded-full font-medium ${
-                                    course.status === "Active"
-                                      ? "bg-accent-500/20 text-accent-500"
-                                      : "bg-red-500/20 text-red-500"
+                                  className={`text-xs px-2 py-1 rounded-full font-medium flex-shrink-0 ml-2 ${
+                                    course.status === "in progress"
+                                      ? "bg-yellow-500/20 text-yellow-600"
+                                      : course.status == "not started"
+                                      ? "bg-red-500/20 text-red-500"
+                                      : "bg-green-500/20 text-green-600"
                                   }`}
                                   whileHover={{ scale: 1.05 }}
                                 >
@@ -339,29 +418,6 @@ const Sidenav = () => {
             </motion.div>
           ))}
         </div>
-
-        {/* Footer */}
-        <motion.div 
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.5 }}
-          className="px-6 pt-4 border-t border-gray-200 dark:border-gray-700"
-        >
-          <AnimatePresence>
-            {isExpanded && (
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                className="text-center"
-              >
-                {/* <p className="text-xs text-neutral-600 dark:text-neutral-400">
-                  Powered by AI • Built with ❤️
-                </p> */}
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </motion.div>
       </div>
     </motion.nav>
   );

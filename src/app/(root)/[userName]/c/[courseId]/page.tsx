@@ -5,6 +5,7 @@ import WindowPathLogger from "./WindowPathLogger";
 import type { Batch } from "../../../../../components/shared/schema/Project"; 
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
+import Loading from "../../../loading";
 
 export default function Page() {
   const { userName, courseId } = useParams();
@@ -22,9 +23,7 @@ export default function Page() {
   }, [userName, courseId]); // Include `courseId` in the dependency array
 
   if (!Batches || !Batches.batch || Batches.batch.length === 0) {
-    return (
-      <div className="text-center text-red-500 text-lg">Loading...</div>
-    );
+    return <Loading/>;
   }
 
   return (

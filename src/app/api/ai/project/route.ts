@@ -40,8 +40,14 @@ export async function POST(req: Request) {
         status : "in progress",
         batch : {
           update : {
-            status : "in progress"
+            status : "in progress",
+            course : {
+              update : {
+                status : "in progress",
+              }
+            }
           }
+          
         }
       },
     })
