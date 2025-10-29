@@ -69,10 +69,40 @@ const BatchCard = ({
     Unknown: "bg-gray-400",
   };
 
+  // 🆕 Derive a batch status from its projects
+  const getBatchStatus = (projects: Project[]) => {
+    if (!projects || projects.length === 0) return "No Projects";
+    const statuses = projects.map((p) => p.status);
+
+    if (statuses.every((s) => s === "completed")) return "Completed";
+    if (statuses.some((s) => s === "in progress")) return "In Progress";
+    if (statuses.every((s) => s === "not started")) return "Not Started";
+
+    return "Mixed";
+  };
+
+  const batchStatus = getBatchStatus(batch.projects || []);
+
+  // 🆕 Optional: color map for status badge
+  const statusColors: { [key: string]: string } = {
+    "Completed": "bg-green-600 text-white",
+    "In Progress": "bg-blue-500 text-white",
+    "Not Started": "bg-gray-400 text-white",
+    "Mixed": "bg-yellow-500 text-black",
+    "No Projects": "bg-neutral-400 text-black"
+  };
+
   return (
     <div className="relative">
+      {/* 🆕 Status badge top-left */}
       <div
-        className="bg-white dark:bg-neutral-800 shadow-md rounded-lg p-4 m-2 w-72 border border-gray-300 dark:border-neutral-700 text-center relative cursor-pointer"
+        className={`absolute -top-3 left-2 px-2 py-[2px] rounded-t text-xs font-semibold shadow-sm ${statusColors[batchStatus]}`}
+      >
+        {batchStatus}
+      </div>
+
+      <div
+        className="bg-white dark:bg-neutral-800 shadow-md rounded-b p-4 m-2 w-72 border border-gray-300 dark:border-neutral-700 text-center relative cursor-pointer"
         onClick={handleClick}
       >
         <h2 className="text-lg font-semibold text-black dark:text-gray-200 text-left w-full">

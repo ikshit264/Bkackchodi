@@ -1,7 +1,6 @@
 "use client"
 import { getBatchProjectsByCourseId } from "../../../../../components/actions/batch";
 import BatchCard from "../../../../../components/batch/card";
-import WindowPathLogger from "./WindowPathLogger";
 import type { Batch } from "../../../../../components/shared/schema/Project"; 
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -28,7 +27,7 @@ export default function Page() {
 
   return (
     <div className="flex flex-col justify-around items-center min-h-screen p-0">
-      <WindowPathLogger />
+      {/* <WindowPathLogger /> */}
       <h1 className="text-black text-7xl text-gradient">{projectName.toUpperCase()}</h1>
       <div className="flex flex-wrap justify-center items-center gap-6">
         {Batches.batch

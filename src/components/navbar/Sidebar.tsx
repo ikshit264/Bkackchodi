@@ -6,7 +6,7 @@ import { FaHome, FaRobot } from "react-icons/fa";
 import { MdMessage } from "react-icons/md";
 import { IoIosArrowForward, IoIosArrowBack } from "react-icons/io";
 import { AiOutlinePlusCircle } from "react-icons/ai";
-import { RefreshCw, Sparkles, Lock } from "lucide-react";
+import { Sparkles, Lock, RefreshCw } from "lucide-react";
 import Link from "next/link";
 import axios from "axios";
 import { useUser } from "@clerk/nextjs";
@@ -284,10 +284,6 @@ const Sidenav = () => {
                             transition={{ duration: 1 }}
                             className="p-1 rounded-lg hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors"
                           >
-                            <RefreshCw
-                              size={16}
-                              className="text-neutral-600 dark:text-neutral-400"
-                            />
                           </motion.button>
                           <motion.div
                             animate={{ rotate: isCoursesExpanded ? 90 : 0 }}

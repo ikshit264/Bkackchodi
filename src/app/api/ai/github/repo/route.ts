@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createRepo } from "../../../../../utils/github/GithubRepo";
+import { prisma } from "../../../../../../lib/prisma";
 
 export async function POST(req: NextRequest) {
   const body = await req.json();
-  const { userId, repoName, desc } = body;
+  const { userId, repoName, desc, projectId } = body;
 
   if (!userId || !repoName || !desc) {
     return NextResponse.json(
@@ -13,8 +14,13 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const RepoName = await createRepo(userId, repoName, desc);
-    console.log("repoName hai ye bhai", RepoName);
+    const RepoName = await createRepo(userId, projectId, repoName, desc);
+
+    await prisma.project.update({
+      where: { id: projectId },
+      data: { githubRepo: RepoName },
+    });
+
     return NextResponse.json({ success: true, RepoName });
   } catch (error) {
     console.error("Error creating repo:", error);

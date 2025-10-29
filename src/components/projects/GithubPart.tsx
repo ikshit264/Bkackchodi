@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 "use client";
 
 import { useEffect, useState } from "react";
@@ -6,30 +7,35 @@ import axios from "axios";
 import { useUser } from "@clerk/nextjs";
 import yaml from "js-yaml";
 import { GetProjectByProjectId } from "../actions/project";
+import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
+import { duotoneDark } from "react-syntax-highlighter/dist/cjs/styles/prism";
 
 const GithubPart = ({ projectId }) => {
   const { user } = useUser();
   const userId = user?.id;
+  const userName = user?.username;
 
   const [project, setProject] = useState(null);
-  const [repoLink, setRepoLink] = useState("");
+  const [repoLink, setRepoLink] = useState<string>("");
   const [evaluationResult, setEvaluationResult] = useState(null);
   const [loading, setLoading] = useState(false);
   const [codeQL, setCodeQL] = useState(null);
+  const [codeQLVisible, setCodeQLVisible] = useState(false);
+  const url = `https://github.com/${userName}`;
 
-  // 🧠 Fetch project details on mount
   useEffect(() => {
     const fetchProject = async () => {
       try {
         const response = await GetProjectByProjectId(projectId);
+        const repoLink = response.githubRepo || "";
+        setRepoLink(`${url + `/` + repoLink}`);
         setProject(response);
-        console.log(response); // 👈 Use response here instead of `project`
       } catch (error) {
         console.error("Fetch error:", error);
       }
     };
     fetchProject();
-  }, [projectId]); // ✅ Correct dependency  
+  }, [projectId]);
 
   if (!project) {
     return <p className="text-gray-600">Loading project...</p>;
@@ -39,7 +45,6 @@ const GithubPart = ({ projectId }) => {
     ? JSON.parse(project.GithubData)
     : evaluationResult;
 
-    console.log(githubData)
   const PushToDB = async (githubData) => {
     try {
       const response = await axios.patch("/api/query/project", {
@@ -137,28 +142,52 @@ const GithubPart = ({ projectId }) => {
     <div className="space-y-4 bg-white p-6 rounded-lg shadow-lg">
       <h5 className="text-xl font-bold text-gray-800">GitHub Evaluation</h5>
 
-      {codeQL && (
-        <div className="space-y-4 bg-gray-100 p-4 rounded-lg">
-          <p className="text-gray-700">
-            🎯 <strong>CodeQL Generated:</strong> {codeQL}
+      <div className="space-y-4 bg-gray-100 p-4 rounded-lg">
+        <div
+          className="flex justify-between items-center cursor-pointer"
+          onClick={() => setCodeQLVisible(!codeQLVisible)}
+        >
+          <p className="text-gray-700 font-semibold">
+            🧠 <strong>CodeQL Analysis</strong>
           </p>
+          <span className="text-sm text-blue-600">
+            {codeQLVisible ? "▼ Hide" : "▶ Show"}
+          </span>
         </div>
-      )}
 
-      {githubData ? ( 
+        {codeQLVisible && (
+          <div className="mt-2">
+            {codeQL ? (
+              <SyntaxHighlighter
+                language="yaml"
+                style={duotoneDark}
+                customStyle={{
+                  borderRadius: "0.5rem",
+                  padding: "1rem",
+                  fontSize: "0.85rem",
+                  maxHeight: "24rem",
+                }}
+              >
+                {codeQL}
+              </SyntaxHighlighter>
+            ) : (
+              <p className="text-gray-400 italic">Not generated yet.</p>
+            )}
+          </div>
+        )}
+      </div>
+
+      {githubData && (
         <div className="space-y-4 bg-gray-100 p-4 rounded-lg">
           {githubData && githubData.error ? (
             <p className="text-red-500">{githubData.error}</p>
           ) : (
             <>
               <p className="text-gray-700">
-                🎯 <strong>Objectives Met:</strong>{" "}
-                {githubData["Objectives Met"]}
+                🎯 <strong>Objectives Met:</strong> {githubData["Objectives Met"]}
               </p>
               <div>
-                <h6 className="font-semibold text-red-600">
-                  ⚠️ Critical Issues:
-                </h6>
+                <h6 className="font-semibold text-red-600">⚠️ Critical Issues:</h6>
                 <ul className="list-disc pl-5 text-gray-700">
                   {githubData["Critical Issues"]?.map((issue, index) => (
                     <li key={index}>{issue}</li>
@@ -166,9 +195,7 @@ const GithubPart = ({ projectId }) => {
                 </ul>
               </div>
               <div>
-                <h6 className="font-semibold text-green-600">
-                  💡 Suggestions:
-                </h6>
+                <h6 className="font-semibold text-green-600">💡 Suggestions:</h6>
                 <ul className="list-disc pl-5 text-gray-700">
                   {githubData["Suggestions"]?.map((suggestion, index) => (
                     <li key={index}>{suggestion}</li>
@@ -181,35 +208,28 @@ const GithubPart = ({ projectId }) => {
             </>
           )}
         </div>
-       ) : (
-        <>
-          <input
-            type="text"
-            placeholder="Enter GitHub Repo Link"
-            value={repoLink}
-            onChange={(e) => setRepoLink(e.target.value)}
-            className="w-full text-black p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
-          />
-          <button
-            onClick={handleEvaluate}
-            disabled={loading}
-            className={`flex items-center gap-2 px-4 py-2 ${
-              loading ? "bg-gray-400" : "bg-green-600"
-            } text-white rounded-lg hover:bg-green-700 transition-all`}
-          >
-            <Play size={16} /> {loading ? "Evaluating..." : "Evaluate"}
-          </button>
-          <button
-            onClick={handleCodeQlGenerate}
-            disabled={loading}
-            className={`flex items-center gap-2 px-4 py-2 ${
-              loading ? "bg-gray-400" : "bg-green-600"
-            } text-white rounded-lg hover:bg-green-700 transition-all`}
-          >
-            <Play size={16} /> {loading ? "Generating..." : "Generate"}
-          </button>
-        </>
       )}
+
+      <div className="flex gap-2">
+        <button
+          onClick={handleEvaluate}
+          disabled={loading}
+          className={`flex items-center gap-2 px-4 py-2 ${
+            loading ? "bg-gray-400" : "bg-green-600"
+          } text-white rounded-lg hover:bg-green-700 transition-all`}
+        >
+          <Play size={16} /> {loading ? "Evaluating..." : "Evaluate"}
+        </button>
+        <button
+          onClick={handleCodeQlGenerate}
+          disabled={loading}
+          className={`flex items-center gap-2 px-4 py-2 ${
+            loading ? "bg-gray-400" : "bg-green-600"
+          } text-white rounded-lg hover:bg-green-700 transition-all`}
+        >
+          <Play size={16} /> {loading ? "Generating..." : "Generate"}
+        </button>
+      </div>
     </div>
   );
 };

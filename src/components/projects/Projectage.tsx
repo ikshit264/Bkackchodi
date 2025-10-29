@@ -150,7 +150,7 @@ const ProjectDetail = ({ project: initialProject }) => {
         stepsData
       );
 
-      console.log("parsedData", parsedData);
+      console.log("updatedSteps", updatedSteps);
 
       // Map back the issueId to their respective steps
       const newSteps = parsedData.steps.map((step, index) => ({
