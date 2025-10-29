@@ -2,10 +2,10 @@
 
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
-import Image from "next/image";
 import { GetUserByUserName } from "../../../../components/actions/user";
 import ProfileForm from "../../../../components/shared/ProfileForm";
 import Loading from "../../loading";
+import GitHubHeatmap from "../../../../components/dashboard/GithubHeatMap";
 
 const ProfilePage = () => {
   const [user, setUser] = useState(null);
@@ -41,18 +41,15 @@ const ProfilePage = () => {
   }
 
   return (
-    <div className="flex justify-center items-center min-h-screen p-4">
-      <div className="w-full max-w-lg bg-white shadow-md rounded-lg p-6">
-        <div className="flex items-center space-x-4 border-b pb-4">
-          {user.avatar && <Image src={user.avatar} alt="Avatar" height={16} width={16} className="w-16 h-16 rounded-full border" />}
-          <div>
-            <h2 className="text-xl font-semibold text-black">{user.name} {user.lastName}</h2>
-            <p className="text-black font-bold italic underline-offset-1 ">@{user.userName}</p>
-          </div>
-        </div>
+    <div className="flex justify-center items-center  p-4">
+      <div className="w-full bg-white rounded-lg p-6">
 
-        {/* Client-side User Update Form */}
+        <div className="text-xl font-semibold mb-2">
+                <span className="text-black">@{userName}</span>
+              </div>
+
         <ProfileForm user={user} />
+        <GitHubHeatmap UserToken={user.githubToken} userName={user.userName} />
       </div>
     </div>
   );

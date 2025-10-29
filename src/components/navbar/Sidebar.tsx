@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { FaHome, FaRobot } from "react-icons/fa";
 import { MdMessage } from "react-icons/md";
 import { IoIosArrowForward, IoIosArrowBack } from "react-icons/io";
-import { AiOutlinePlusCircle } from "react-icons/ai";
+import { AiOutlinePlusCircle, AiOutlineProfile } from "react-icons/ai";
 import { Sparkles, Lock, RefreshCw } from "lucide-react";
 import Link from "next/link";
 import axios from "axios";
@@ -70,6 +70,12 @@ const Sidenav = () => {
       href: username ? `/${username}/new_course` : "/new_course",
       gradient: "from-accent-500 to-accent-600",
     },
+    {
+      icon: AiOutlineProfile,
+      label: "Profile",
+      href: username ? `/${username}/profile` : "/profile",
+      gradient: "from-accent-500 to-accent-600",
+    },
   ];
 
   const getCourses = async () => {
@@ -130,6 +136,8 @@ const Sidenav = () => {
       setIsExpanded(true);
     }
   };
+
+  if (loading || !username) return null;
 
   return (
     <motion.nav

@@ -51,7 +51,7 @@ const ProfileForm = ({ user }: { user: any }) => {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
-      className="w-full max-w-2xl mx-auto"
+      className="w-full  mx-auto"
     >
       <div className="card-glass p-8 border border-primary-500 ring-4">
         {/* Header */}
@@ -75,12 +75,14 @@ const ProfileForm = ({ user }: { user: any }) => {
         </div>
 
         {/* Form */}
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <form onSubmit={handleSubmit} className="space-y-6 w-full">
+          <div className="flex gap-2 w-full">
           {/* First Name */}
           <motion.div
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.5, delay: 0.3 }}
+            className="w-full"
           >
             <label className="label">
               <span className="flex items-center space-x-2">
@@ -105,6 +107,7 @@ const ProfileForm = ({ user }: { user: any }) => {
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.5, delay: 0.4 }}
+            className="w-full"
           >
             <label className="label">
               <span className="flex items-center space-x-2">
@@ -123,12 +126,15 @@ const ProfileForm = ({ user }: { user: any }) => {
               required
             />
           </motion.div>
+          </div>
 
+          <div className="flex gap-2 w-full">
           {/* Email (Read-only) */}
           <motion.div
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.5, delay: 0.5 }}
+            className="w-full"
           >
             <label className="label">
               <span className="flex items-center space-x-2">
@@ -155,6 +161,7 @@ const ProfileForm = ({ user }: { user: any }) => {
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.5, delay: 0.6 }}
+            className="w-full"
           >
             <label className="label">
               <span className="flex items-center space-x-2">
@@ -175,7 +182,7 @@ const ProfileForm = ({ user }: { user: any }) => {
               </div>
             </div>
           </motion.div>
-
+        </div>
           {/* Submit Button */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
