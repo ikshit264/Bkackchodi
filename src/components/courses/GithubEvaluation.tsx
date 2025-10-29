@@ -86,17 +86,21 @@ const GithubEvaluation = ({ project }) => {
       setEvaluationResult({ error: "Please enter a valid GitHub link." });
       return;
     }
-  
+
     setLoading(true);
     setEvaluationResult(null);
-  
+
     try {
       const store = repoLink.split("/");
       const indexOfGithub = store.findIndex((m) => m === "github.com");
-      if (indexOfGithub === -1 || !store[indexOfGithub + 1] || !store[indexOfGithub + 2]) {
+      if (
+        indexOfGithub === -1 ||
+        !store[indexOfGithub + 1] ||
+        !store[indexOfGithub + 2]
+      ) {
         throw new Error("Invalid GitHub repository link.");
       }
-  
+
       const response = await axios.get("/api/ai/github/codeql", {
         params: {
           id: userId,
@@ -104,7 +108,7 @@ const GithubEvaluation = ({ project }) => {
           repo: store[indexOfGithub + 2],
         },
       });
-  
+
       if (response.status !== 200) {
         throw new Error(`Request failed with status: ${response.status}`);
       }
@@ -119,20 +123,18 @@ const GithubEvaluation = ({ project }) => {
       setLoading(false);
     }
   };
-  
+
   return (
     <div className="space-y-4 bg-white p-6 rounded-lg shadow-lg">
-      <h5 className="text-xl font-bold text-gray-800">GitHub Evaluation</h5>
+      <h5 className="text-xl font-bold text-gray-800">GitHub Evaluatin</h5>
 
-      {codeQL && (
-        <div className="space-y-4 bg-gray-100 p-4 rounded-lg">
-          <p className="text-gray-700">
-            🎯 <strong>CodeQL Generated:</strong> {codeQL}
-          </p>
-        </div>
-      )}
+      <div className="space-y-4 bg-gray-100 p-4 rounded-lg">
+        <p className="text-gray-700">
+          🎯 <strong>CodeQL Generated:</strong> {codeQL}
+        </p>
+      </div>
 
-      {githubData ? (
+      {githubData && (
         <div className="space-y-4 bg-gray-100 p-4 rounded-lg">
           {githubData.error ? (
             <p className="text-red-500">{githubData.error}</p>
@@ -168,36 +170,34 @@ const GithubEvaluation = ({ project }) => {
             </>
           )}
         </div>
-      ) : (
-        <>
-          <input
-            type="text"
-            placeholder="Enter GitHub Repo Link"
-            value={repoLink}
-            onChange={(e) => setRepoLink(e.target.value)}
-            className="w-full text-black p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
-          />
-          <button
-            onClick={handleEvaluate}
-            disabled={loading}
-            className={`flex items-center gap-2 px-4 py-2 ${
-              loading ? "bg-gray-400" : "bg-green-600"
-            } text-white rounded-lg hover:bg-green-700 transition-all`}
-          >
-            <Play size={16} /> {loading ? "Evaluating..." : "Evaluate"}
-          </button>
-          <button
-            onClick={handleCodeQlGenerate}
-            disabled={loading}
-            className={`flex items-center gap-2 px-4 py-2 ${
-              loading ? "bg-gray-400" : "bg-green-600"
-            } text-white rounded-lg hover:bg-green-700 transition-all`}
-          >
-            <Play size={16} /> {loading ? "Generating..." : "Generate"}
-          </button>
-          {/* <CreateGithubProjectButton Batchid={project.batchId} userId={userId} projectid={project.id} stepIndex={project.position}/> */}
-        </>
       )}
+
+      <input
+        type="text"
+        placeholder="Enter GitHub Repo Link"
+        value={repoLink}
+        onChange={(e) => setRepoLink(e.target.value)}
+        className="w-full text-black p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
+      />
+      <button
+        onClick={handleEvaluate}
+        disabled={loading}
+        className={`flex items-center gap-2 px-4 py-2 ${
+          loading ? "bg-gray-400" : "bg-green-600"
+        } text-white rounded-lg hover:bg-green-700 transition-all`}
+      >
+        <Play size={16} /> {loading ? "Evaluating..." : "Evaluate"}
+      </button>
+      <button
+        onClick={handleCodeQlGenerate}
+        disabled={loading}
+        className={`flex items-center gap-2 px-4 py-2 ${
+          loading ? "bg-gray-400" : "bg-green-600"
+        } text-white rounded-lg hover:bg-green-700 transition-all`}
+      >
+        <Play size={16} /> {loading ? "Generating..." : "Generate"}
+      </button>
+      {/* <CreateGithubProjectButton Batchid={project.batchId} userId={userId} projectid={project.id} stepIndex={project.position}/> */}
     </div>
   );
 };

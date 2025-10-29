@@ -20,10 +20,13 @@ export async function CreateIssue (
     }));
 
     const repo = await axios.post("/api/ai/github/repo", {
+        projectId : BatchProjectId,
         userId,
         repoName,
         desc: "This is a test repo",
     });
+
+    console.log("batch proj Id", BatchProjectId)
 
     repoName = repo.data.RepoName
 
