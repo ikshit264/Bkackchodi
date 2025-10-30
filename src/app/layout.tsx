@@ -4,6 +4,7 @@ import { Inter, Space_Grotesk, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import SyncUser from "../utils/SyncUser";
 import Sidenav from "../components/navbar/Sidebar";
+import AppInitializer from "../components/core/AppInitilaiser";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -37,6 +38,7 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  
   return (
     <ClerkProvider>
       <html 
@@ -45,29 +47,37 @@ export default function RootLayout({
       >
         <body className="min-h-screen bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 antialiased">
           <div className="relative min-h-screen">
-            <SignedIn>
-              <div className="absolute top-6 right-6 z-50">
-                <div className="glass rounded-2xl p-2 shadow-medium">
-                  <UserButton 
-                    afterSignOutUrl="/"
-                    appearance={{
-                      elements: {
-                        avatarBox: "w-10 h-10 rounded-xl",
-                        userButtonPopoverCard: "glass rounded-2xl border-gray-200 dark:border-gray-700 shadow-hard",
-                        userButtonPopoverActionButton: "hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-xl",
-                      }
-                    }}
-                  />
+            <div
+              style={{
+                paddingLeft: "var(--sidebar-width, 88px)",
+                transition: "padding-left 0.4s cubic-bezier(0.4, 0, 0.2, 1)",
+              }}
+            >
+              <AppInitializer />
+              <SignedIn>
+                <div className="absolute top-6 right-6 z-50">
+                  <div className="glass rounded-2xl p-2 shadow-medium">
+                    <UserButton 
+                      afterSignOutUrl="/"
+                      appearance={{
+                        elements: {
+                          avatarBox: "w-10 h-10 rounded-xl",
+                          userButtonPopoverCard: "glass rounded-2xl border-gray-200 dark:border-gray-700 shadow-hard",
+                          userButtonPopoverActionButton: "hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-xl",
+                        }
+                      }}
+                    />
+                  </div>
                 </div>
-              </div>
-            </SignedIn>
-            <SyncUser />
+                <SyncUser />
+                <main className=" px-4 md:px-6 lg:px-8 min-h-screen">
+                  <div className="max-w-7xl mx-auto">
+                    {children}
+                  </div>
+                </main>
+              </SignedIn>
+            </div>
             <Sidenav />
-            <main className=" px-4 md:px-6 lg:px-8 min-h-screen">
-              <div className="max-w-7xl mx-auto">
-                {children}
-              </div>
-            </main>
           </div>
         </body>
       </html>

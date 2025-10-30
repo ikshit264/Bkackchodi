@@ -3,15 +3,14 @@
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { FaHome, FaRobot } from "react-icons/fa";
-import { MdMessage } from "react-icons/md";
 import { IoIosArrowForward, IoIosArrowBack } from "react-icons/io";
 import { AiOutlinePlusCircle, AiOutlineProfile } from "react-icons/ai";
-import { Sparkles, Lock, RefreshCw } from "lucide-react";
+import { Sparkles, RefreshCw, PanelLeftOpen } from "lucide-react";
 import Link from "next/link";
 import axios from "axios";
 import { useUser } from "@clerk/nextjs";
 import { GetUserByUserId } from "../actions/user";
-
+  
 type Course = {
   id: string;
   title: string;
@@ -53,14 +52,14 @@ const Sidenav = () => {
 
   const menuItems = [
     {
-      icon: FaHome,
-      label: username ?? "Home",
-      href: username ? `/${username}/c` : "/",
-      gradient: "from-primary-500 to-primary-600",
+      icon: AiOutlineProfile,
+      label: "All Courses",
+      gradient: "from-accent-500 to-accent-600",
+      href: username ? `/${username}/c` : "/profile",
     },
     {
-      icon: MdMessage,
-      label: "Courses",
+      icon: AiOutlineProfile,
+      label: "My Courses",
       expandable: true,
       gradient: "from-secondary-500 to-secondary-600",
     },
@@ -71,10 +70,10 @@ const Sidenav = () => {
       gradient: "from-accent-500 to-accent-600",
     },
     {
-      icon: AiOutlineProfile,
-      label: "Profile",
-      href: username ? `/${username}/profile` : "/profile",
-      gradient: "from-accent-500 to-accent-600",
+      icon: FaHome,
+      label: username ?? "Home",
+      href: username ? `/${username}/profile` : "/",
+      gradient: "from-primary-500 to-primary-600",
     },
   ];
 
@@ -111,6 +110,15 @@ const Sidenav = () => {
     getCourses();
   }, []);
 
+  // Reflect sidebar width as a CSS variable for layout padding
+  useEffect(() => {
+    const root = document.documentElement;
+    root.style.setProperty("--sidebar-width", isExpanded ? "288px" : "88px");
+    return () => {
+      root.style.removeProperty("--sidebar-width");
+    };
+  }, [isExpanded]);
+
   useEffect(() => {
     // Only respond to mouse movement if not locked
     if (isLocked) return;
@@ -142,13 +150,13 @@ const Sidenav = () => {
   return (
     <motion.nav
       initial={{ x: -300 }}
-      animate={{ 
+      animate={{
         x: 0,
-        width: isExpanded ? 288 : 88 // 72 * 4 = 288px, 22 * 4 = 88px
+        width: isExpanded ? 288 : 100, // 72 * 4 = 288px, 22 * 4 = 88px
       }}
-      transition={{ 
+      transition={{
         x: { duration: 0.5, ease: "easeOut" },
-        width: { duration: 0.4, ease: [0.4, 0, 0.2, 1] }
+        width: { duration: 0.4, ease: [0.4, 0, 0.2, 1] },
       }}
       onMouseEnter={() => {
         if (!isLocked) {
@@ -195,50 +203,34 @@ const Sidenav = () => {
               )}
             </AnimatePresence>
           </div>
-          
+
           {/* Lock/Unlock Button */}
           <motion.button
             initial={{ opacity: 0, x: -10 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.2, delay: 0.1 }}
             onClick={toggleLock}
-            className="mt-4 ml-1 flex items-center space-x-2 px-3 py-2 rounded-lg bg-neutral-100/50 dark:bg-neutral-800/50 hover:bg-neutral-200/50 dark:hover:bg-neutral-700/50 transition-all duration-200 group"
+            className="mt-4 ml-2 w-fit justify-start flex items-center space-x-2 px-2 mx-1 py-2 rounded-lg bg-neutral-100/50 dark:bg-neutral-800/50 hover:bg-neutral-500/80  dark:hover:bg-neutral-400/90 transition-all duration-200 group shadow-medium"
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
+            title="Toggle Sidebar"
           >
             {isLocked ? (
               <>
-                <IoIosArrowBack size={16} className="text-neutral-600 dark:text-neutral-400 group-hover:text-neutral-800 dark:group-hover:text-neutral-200 transition-colors" />
-                <AnimatePresence mode="wait">
-                  {isExpanded && (
-                    <motion.span
-                      initial={{ opacity: 0, width: 0 }}
-                      animate={{ opacity: 1, width: "auto" }}
-                      exit={{ opacity: 0, width: 0 }}
-                      transition={{ duration: 0.3, ease: "easeInOut" }}
-                      className="text-xs font-medium text-neutral-600 dark:text-neutral-400 group-hover:text-neutral-800 dark:group-hover:text-neutral-200 transition-colors whitespace-nowrap overflow-hidden"
-                    >
-                      Collapse
-                    </motion.span>
-                  )}
-                </AnimatePresence>
+                <IoIosArrowBack
+                // color={isExpanded ? "#ffffff" : "#6b7280"}
+                  size={16}
+                  className="text-neutral-600 dark:text-neutral-400  dark:group-hover:text-neutral-200 transition-colors group-hover:text-white"
+                />
               </>
             ) : (
               <>
-                <Lock size={14} className="text-neutral-600 dark:text-neutral-400 group-hover:text-neutral-800 dark:group-hover:text-neutral-200 transition-colors" />
-                <AnimatePresence mode="wait">
-                  {isExpanded && (
-                    <motion.span
-                      initial={{ opacity: 0, width: 0 }}
-                      animate={{ opacity: 1, width: "auto" }}
-                      exit={{ opacity: 0, width: 0 }}
-                      transition={{ duration: 0.3, ease: "easeInOut" }}
-                      className="text-xs font-medium text-neutral-600 dark:text-neutral-400 group-hover:text-neutral-800 dark:group-hover:text-neutral-200 transition-colors whitespace-nowrap overflow-hidden"
-                    >
-                      Lock sidebar
-                    </motion.span>
-                  )}
-                </AnimatePresence>
+                <PanelLeftOpen 
+                className="group-hover:text-white"
+                  // alt="Expand"
+                  width={20}
+                  height={20}
+                />
               </>
             )}
           </motion.button>
@@ -291,8 +283,7 @@ const Sidenav = () => {
                             animate={{ rotate: loading ? 720 : 0 }}
                             transition={{ duration: 1 }}
                             className="p-1 rounded-lg hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors"
-                          >
-                          </motion.button>
+                          ></motion.button>
                           <motion.div
                             animate={{ rotate: isCoursesExpanded ? 90 : 0 }}
                             transition={{ duration: 0.2 }}

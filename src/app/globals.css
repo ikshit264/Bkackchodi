@@ -46,6 +46,26 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
+/* Custom thin black scrollbar with smooth scrolling */
+.custom-scrollbar {
+  scrollbar-width: thin;              /* Firefox */
+  scrollbar-color: black transparent; /* Firefox */
+  scroll-behavior: smooth;            /* smooth scroll */
+}
+
+/* Chrome, Edge, Safari */
+.custom-scrollbar::-webkit-scrollbar {
+  height: 6px;       /* thin horizontal bar */
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background-color: black;
+  border-radius: 10px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
 
 /* Custom scrollbar */
 ::-webkit-scrollbar {
