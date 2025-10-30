@@ -39,7 +39,7 @@ const ProfilePage = () => {
           console.error("Error fetching user:", error);
         } finally {
           setLoading(false);
-          const res = await fetchGitHubStatsForYear("vidyasagar-dadilwar");
+          const res = await fetchGitHubStatsForYear(userName);
           if (res) {
             setRankData(res);
           }
