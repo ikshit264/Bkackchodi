@@ -1,5 +1,4 @@
 import axios from "axios";
-import { GithubTokenExtract } from "../../../utils/github/GithubBackchodi";
 
 /**
 * Fetch contribution stats (commits, issues, PRs, reviews, stars, followers)
@@ -12,19 +11,18 @@ import { GithubTokenExtract } from "../../../utils/github/GithubBackchodi";
 * @returns          { username, fromDate, toDate, stats, score }
 */
 export async function fetchGitHubStatsForYear(
-  username: string,
+  githubToken: string,
+  username : string,
   fromDate?: string | Date,
 ) {
-
-
-  
-  const token = await GithubTokenExtract(username) ; // ← set in your .env file
+  const token = githubToken ; // ← set in your .env file
   if (!token) throw new Error("Missing GITHUB_TOKEN environment variable");
-  
   const headers = {
     Authorization: `Bearer ${token}`,
     "Content-Type": "application/json",
   };
+
+  console.log("Fetching GitHub stats for user:", headers);
 
   const now = new Date();
   const start = fromDate ? new Date(fromDate) : new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000);

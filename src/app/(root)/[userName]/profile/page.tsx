@@ -1,17 +1,19 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 "use client";
-
 import { useEffect, useState } from "react";
-import { useParams } from "next/navigation";
-import { GetUserByUserName } from "../../../../components/actions/user";
+import {
+  GetUserByUserId,
+} from "../../../../components/actions/user";
 import ProfileForm from "../../../../components/shared/ProfileForm";
 import Loading from "../../loading";
 import GitHubHeatmap from "../../../../components/dashboard/GithubHeatMap";
 import { fetchGitHubStatsForYear } from "../../../../components/actions/user/Calculation";
+import { useUser } from "@clerk/nextjs";
 
 const ProfilePage = () => {
-  const [user, setUser] = useState(null);
+  const [userData, setUserData] = useState(null);
+  const { user, isLoaded } = useUser();
   const [loading, setLoading] = useState(true);
-  const params = useParams();
   const [RankData, setRankData] = useState({
     username: "",
     fromDate: "",
@@ -27,31 +29,32 @@ const ProfilePage = () => {
     },
     score: 0,
   });
-  const userName = params.userName as string;
 
   useEffect(() => {
+    if (!isLoaded) return;
+    if (!user) {
+      setUserData(null);
+      return;
+    }
     const fetchUser = async () => {
-      if (userName) {
-        try {
-          const userData = await GetUserByUserName(userName);
-          setUser(userData);
-        } catch (error) {
-          console.error("Error fetching user:", error);
-        } finally {
-          setLoading(false);
-          const res = await fetchGitHubStatsForYear(userName);
-          if (res) {
-            setRankData(res);
-          }
-          console.log(res);
-        }
-      } else {
+        const fetched = await GetUserByUserId(user.id);
+        setUserData(fetched);
         setLoading(false);
-      }
+        console.log("Fetched user data.", fetched.clerkId);
+        const res = await fetchGitHubStatsForYear(
+          fetched.githubToken,
+          fetched.userName
+        );
+        console.log("Finished fetching user data.", res);
+        if (res) {
+          setRankData(res);
+        }
+        console.log(res);
+      
     };
 
     fetchUser();
-  }, [userName]);
+  }, [isLoaded]);
 
   if (loading) {
     return <Loading />;
@@ -107,7 +110,7 @@ const ProfilePage = () => {
                   Developer Profile
                 </div>
                 <div className="text-2xl font-bold text-slate-800">
-                  @{userName}
+                  @{userData.userName}
                 </div>
               </div>
             </div>
@@ -198,7 +201,7 @@ const ProfilePage = () => {
             </h2>
             <div className="h-1 w-24 bg-gradient-to-r from-blue-500 to-purple-600 mt-2 rounded-full"></div>
           </div>
-          <ProfileForm user={user} />
+          <ProfileForm user={userData} />
         </div>
 
         {/* GitHub Heatmap Card */}
@@ -209,9 +212,7 @@ const ProfilePage = () => {
             </h2>
             <div className="h-1 w-24 bg-gradient-to-r from-emerald-500 to-teal-600 mt-2 rounded-full"></div>
           </div>
-          <GitHubHeatmap
-            userName={user.userName}
-          />
+          <GitHubHeatmap userName={userData.userName} />
         </div>
       </div>
     </div>

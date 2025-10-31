@@ -53,13 +53,13 @@ const Sidenav = () => {
   const menuItems = [
     {
       icon: AiOutlineProfile,
-      label: "All Courses",
+      label: "Courses",
       gradient: "from-accent-500 to-accent-600",
       href: username ? `/${username}/c` : "/profile",
     },
     {
       icon: AiOutlineProfile,
-      label: "My Courses",
+      label: "Courses",
       expandable: true,
       gradient: "from-secondary-500 to-secondary-600",
     },

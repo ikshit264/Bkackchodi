@@ -1,5 +1,8 @@
 /* eslint-disable  @typescript-eslint/no-unused-vars */
 
+import { u } from "framer-motion/dist/types.d-B50aGbjN";
+import { User } from "lucide-react";
+
 // Types for our data structures
 interface CommitResponse {
   commit: {
@@ -50,6 +53,7 @@ export async function GithubTokenExtract(UserId: string) {
       },
     }
   );
+  console.log("UserId", UserId);
 
   if (!response.ok) {
     throw new Error("Failed to fetch github token from Clerk");

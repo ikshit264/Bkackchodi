@@ -5,9 +5,7 @@ const prisma = getPrismaClient();
 
 // ----- UTILITIES -----
 async function fetchGithubStats({ userName, token, fromDate, toDate }) {
-  // Fetch GitHub profile and contributions (GraphQL v4)
-  // Adds contributions, PRs, issues, commits, reviews if needed
-  // Optionally uses date-range for partial fetching (per requirement)
+
   const url = "https://api.github.com/graphql";
   const query = `
     query($userName: String!, $from: DateTime, $to: DateTime) {

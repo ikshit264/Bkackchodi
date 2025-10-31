@@ -24,6 +24,7 @@ const jetbrainsMono = JetBrains_Mono({
   display: "swap",
 });
 
+
 export const metadata: Metadata = {
   title: "AI Course Roadmap Automation | GitSmart",
   description: "Master Git. Automate Workflows. Code Smarter. AI-powered course roadmap automation platform.",
@@ -36,6 +37,7 @@ export const metadata: Metadata = {
 export default function RootLayout({
   children,
 }: Readonly<{
+  // children: React.ReactNode;
   children: React.ReactNode;
 }>) {
   
