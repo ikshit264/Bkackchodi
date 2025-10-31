@@ -55,10 +55,10 @@ export default function RootLayout({
                 transition: "padding-left 0.4s cubic-bezier(0.4, 0, 0.2, 1)",
               }}
             >
-              <AppInitializer />
               <SignedIn>
                 <div className="absolute top-6 right-6 z-50">
                   <div className="glass rounded-2xl p-2 shadow-medium">
+              <AppInitializer />
                     <UserButton 
                       afterSignOutUrl="/"
                       appearance={{

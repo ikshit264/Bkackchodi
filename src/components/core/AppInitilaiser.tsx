@@ -2,55 +2,69 @@
 
 import { useEffect } from 'react';
 import { usePathname } from 'next/navigation';
+import { useUser } from '@clerk/nextjs';
+import { GetUserByUserId } from '../actions/user';
 
 /**
- * Executes a force-fetch of the user's score on every client-side app mount (refresh).
- * It attempts to extract the username from the current URL path.
+ * Waits for Clerk's user to load and force-fetches user score from backend.
  */
 export default function AppInitializer() {
   const pathname = usePathname();
-  
-  // Helper to extract a potential username from the path
-  const extractUserName = (path: string) => {
-    // Assuming the username is the first segment (e.g., /username/c or /username)
-    // You may need to adjust this regex based on your exact route structure.
-    const parts = path.split('/').filter(p => p.length > 0);
-    // Returns the first segment, or undefined if the path is just '/'
-    return parts[0]; 
-  };
-  
-  const userName = extractUserName(pathname);
+  const { user, isLoaded } = useUser();
 
   useEffect(() => {
-    // 1. Check for a valid userName derived from the URL
-    if (userName) {
-      console.log(`[INIT] Force-fetching score for user: ${userName} on path: ${pathname}`);
-      
-      // 2. Perform the API call
-      fetch(`/api/query/score`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userName, forceFetch: true })
-      })
-      .then(async (res) => {
-        if (!res.ok) {
-          const errorText = await res.text();
-          throw new Error(errorText);
-        }
-        return res.json();
-      })
-      .then(() => {
-        console.log("[SUCCESS] Force-fetch completed.");
-      })
-      .catch((err) => {
-        console.error("[ERROR] Force-fetch failed:", String(err));
-      });
-    } else {
-       console.log("[INFO] Skipping force-fetch, no username found in path.");
-    }
-  }, [userName, pathname]); 
-  // NOTE: Dependency array includes userName and pathname to run if the username changes 
-  // during client-side navigation (though a full refresh is the primary trigger here).
+    let isCancelled = false;
 
-  return null; // This component is only for side-effects, it renders nothing.
+    const fetchUserAndInit = async (attempt = 1) => {
+      if (isCancelled) return;
+
+      // Clerk user may not be ready yet
+      if (!isLoaded || !user) {
+        if (attempt <= 5) {
+          console.log(`[INIT] User not loaded yet, retrying in 500ms... (attempt ${attempt})`);
+          setTimeout(() => fetchUserAndInit(attempt + 1), 500);
+        } else {
+          console.warn('[INIT] User not found after retries — skipping initialization.');
+        }
+        return;
+      }
+
+      try {
+        // 1. Fetch DB user
+        const dbUser = await GetUserByUserId(user.id);
+        console.log('[INIT] DB User:', dbUser);
+
+        if (!dbUser || !dbUser.userName) {
+          console.error('[INIT] No username found for this user in the database.');
+          return;
+        }
+
+        // 2. Force fetch score
+        console.log(`[INIT] Force-fetching score for user: ${dbUser.userName} (path: ${pathname})`);
+
+        const res = await fetch('/api/query/score', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userName: dbUser.userName, forceFetch: true }),
+        });
+
+        if (!res.ok) {
+          const errText = await res.text();
+          throw new Error(errText || 'Failed to fetch score');
+        }
+
+        console.log('[SUCCESS] Force-fetch completed.');
+      } catch (err) {
+        console.error('[ERROR] App initialization failed:', err);
+      }
+    };
+
+    fetchUserAndInit();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [user, isLoaded, pathname]);
+
+  return null;
 }

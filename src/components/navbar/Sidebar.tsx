@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 "use client";
 
 import React, { useState, useEffect } from "react";
@@ -10,7 +11,7 @@ import Link from "next/link";
 import axios from "axios";
 import { useUser } from "@clerk/nextjs";
 import { GetUserByUserId } from "../actions/user";
-  
+import { useRouter } from "next/navigation";
 type Course = {
   id: string;
   title: string;
@@ -27,18 +28,23 @@ const Sidenav = () => {
   const [courses, setCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const router = useRouter();
 
-  // Load username from Clerk -> app DB
   useEffect(() => {
     if (!isLoaded) return;
 
     const fetchUsername = async () => {
       try {
-        if (!user) {
+        const fetched = await GetUserByUserId(user.id);
+
+        // Add null check here
+        if (!fetched) {
+          console.warn("User not found in database");
+          router.push("/");
           setUsername(null);
           return;
         }
-        const fetched = await GetUserByUserId(user.id);
+
         const name = fetched.userName;
         setUsername(name ?? null);
       } catch (err) {
@@ -50,34 +56,13 @@ const Sidenav = () => {
     fetchUsername();
   }, [user, isLoaded]);
 
-  const menuItems = [
-    {
-      icon: AiOutlineProfile,
-      label: "Courses",
-      gradient: "from-accent-500 to-accent-600",
-      href: username ? `/${username}/c` : "/profile",
-    },
-    {
-      icon: AiOutlineProfile,
-      label: "Courses",
-      expandable: true,
-      gradient: "from-secondary-500 to-secondary-600",
-    },
-    {
-      icon: AiOutlinePlusCircle,
-      label: "New Course",
-      href: username ? `/${username}/new_course` : "/new_course",
-      gradient: "from-accent-500 to-accent-600",
-    },
-    {
-      icon: FaHome,
-      label: username ?? "Home",
-      href: username ? `/${username}/profile` : "/",
-      gradient: "from-primary-500 to-primary-600",
-    },
-  ];
-
+  // Update getCourses function (around line 72):
   const getCourses = async () => {
+    if (!user) {
+      console.warn("Cannot fetch courses: No authenticated user");
+      return;
+    }
+
     setLoading(true);
     setError("");
     try {
@@ -93,8 +78,7 @@ const Sidenav = () => {
       setCourses(data);
     } catch (err) {
       const message =
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (err as any)?.response?.data?.message ||
+        (err)?.response?.data?.message ||
         (err as Error).message ||
         "Failed to fetch courses";
       console.error("Error fetching courses:", message);
@@ -107,8 +91,11 @@ const Sidenav = () => {
   };
 
   useEffect(() => {
-    getCourses();
-  }, []);
+    if (user) {
+      // Only fetch if user exists
+      getCourses();
+    }
+  }, [user]);
 
   // Reflect sidebar width as a CSS variable for layout padding
   useEffect(() => {
@@ -144,8 +131,35 @@ const Sidenav = () => {
       setIsExpanded(true);
     }
   };
+  
+  const menuItems = [
+    {
+      icon: AiOutlineProfile,
+      label: "Courses",
+      gradient: "from-accent-500 to-accent-600",
+      href: username ? `/${username}/c` : "/profile",
+    },
+    {
+      icon: AiOutlineProfile,
+      label: "Courses",
+      expandable: true,
+      gradient: "from-secondary-500 to-secondary-600",
+    },
+    {
+      icon: AiOutlinePlusCircle,
+      label: "New Course",
+      href: username ? `/${username}/new_course` : "/new_course",
+      gradient: "from-accent-500 to-accent-600",
+    },
+    {
+      icon: FaHome,
+      label: username ?? "Home",
+      href: username ? `/${username}/profile` : "/",
+      gradient: "from-primary-500 to-primary-600",
+    },
+  ];
 
-  if (loading || !username) return null;
+  if (loading) return null;
 
   return (
     <motion.nav
@@ -218,15 +232,15 @@ const Sidenav = () => {
             {isLocked ? (
               <>
                 <IoIosArrowBack
-                // color={isExpanded ? "#ffffff" : "#6b7280"}
+                  // color={isExpanded ? "#ffffff" : "#6b7280"}
                   size={16}
                   className="text-neutral-600 dark:text-neutral-400  dark:group-hover:text-neutral-200 transition-colors group-hover:text-white"
                 />
               </>
             ) : (
               <>
-                <PanelLeftOpen 
-                className="group-hover:text-white"
+                <PanelLeftOpen
+                  className="group-hover:text-white"
                   // alt="Expand"
                   width={20}
                   height={20}

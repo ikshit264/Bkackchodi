@@ -47,7 +47,7 @@ model Score {
   review       Int  @default(0)
   issue        Int  @default(0)
   contribution Int  @default(0)
-  rank         Int? @unique
+  rank         Int? 
 
   lastUpdatedDate DateTime @default(now()) // business-defined "last updated"
   createdAt       DateTime @default(now())

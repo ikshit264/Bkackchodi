@@ -3,6 +3,7 @@ import { GithubTokenExtract } from "../../../utils/github/GithubBackchodi";
 import { getOwnerId } from "../../../utils/github/GithubProjectBackchodi";
 import { prisma } from "../../../../lib/prisma";
 import { auth } from "@clerk/nextjs/server"; 
+import { fullOrPartialScoreFetch, updateRanksAtomic } from "../../../lib/BackendHelpers";
 
 async function fetchClerkUser(userId: string) {
   const response = await fetch(`https://api.clerk.dev/v1/users/${userId}`, {
@@ -17,7 +18,6 @@ async function fetchClerkUser(userId: string) {
 
   return response.json();
 }
-
 export async function GET(request: Request) {
   const { userId } = await auth();
 
@@ -49,6 +49,12 @@ export async function GET(request: Request) {
     const githubOwnerid = await getOwnerId("user", githubId, githubToken);
     console.log("🏷️ GitHub owner ID fetched:", githubOwnerid);
 
+    // ✅ Check if user already exists
+    const existingUser = await prisma.user.findUnique({
+      where: { clerkId: userId },
+      select: { id: true },
+    });
+
     const dbUser = await prisma.user.upsert({
       where: { clerkId: userId },
       update: {
@@ -69,10 +75,10 @@ export async function GET(request: Request) {
         githubOwnerid,
         githubId,
       },
-      select: { id: true },
+      select: { id: true, userName: true },
     });
 
-    console.log("✅ DB user upserted (created or updated):", dbUser);
+    console.log("✅ DB user upserted:", dbUser);
 
     if (!dbUser) {
       console.log("❌ User not found or failed to upsert in DB");
@@ -82,8 +88,21 @@ export async function GET(request: Request) {
       );
     }
 
-    console.log("🚀 Redirecting user to /dashboard");
-    return NextResponse.redirect(new URL("/dashboard", request.url));
+    const forceFetch = existingUser ? false : true;
+
+    await fullOrPartialScoreFetch({
+      userId: dbUser.id,
+      userName: dbUser.userName,
+      githubToken: githubToken,
+      year : undefined,
+      forceFetch,
+    });
+    // console.log('scoreData', scoreData);
+    await updateRanksAtomic();
+
+    console.log(`🚀 Called score API (forceFetch: ${forceFetch})`);
+
+    return NextResponse.redirect(new URL(`/${dbUser.userName}/profile`, request.url));
   } catch (error) {
     console.error("🔥 Error syncing user:", error);
     return NextResponse.json(
