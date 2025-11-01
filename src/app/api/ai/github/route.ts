@@ -4,13 +4,7 @@ import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
 import { StringOutputParser } from "@langchain/core/output_parsers";
 import { PROMPT_GITHUB } from "../../../../utils/prompt";
 import { GithubDataCollect } from "../../../../utils/github/GithubBackchodi";
-
-const llm = new ChatGoogleGenerativeAI({
-  model: "gemini-2.0-flash-001",
-  temperature: 0,
-  apiKey: process.env.GEMINI_API_KEY2,
-  verbose: true,
-});
+import { getGeminiApiKeyServer } from "../../../../utils/apiKeys.server";
 
 const prompt = ChatPromptTemplate.fromMessages([
   ["system", PROMPT_GITHUB as string],
@@ -23,14 +17,29 @@ const prompt = ChatPromptTemplate.fromMessages([
   ],
 ]);
 
-
 const outputParser = new StringOutputParser();
-
-const chain = prompt.pipe(llm).pipe(outputParser);
-
 
 export async function POST(req: Request) {
   try {
+    // Get API key from database or environment
+    const apiKey = await getGeminiApiKeyServer();
+    if (!apiKey) {
+      return NextResponse.json(
+        { error: "Gemini API key not found. Please add it in your profile settings." },
+        { status: 500 }
+      );
+    }
+
+    // Initialize LLM with dynamic API key
+    const llm = new ChatGoogleGenerativeAI({
+      model: "gemini-2.0-flash-001",
+      temperature: 0,
+      apiKey: apiKey,
+      verbose: true,
+    });
+
+    const chain = prompt.pipe(llm).pipe(outputParser);
+
     const { id, owner, repo, topic, learning_objectives, steps } = await req.json();
 
     const github_repo_commit_data = await GithubDataCollect(id, owner, repo);

@@ -4,14 +4,7 @@ import { NextResponse } from "next/server";
 import { StringOutputParser } from "@langchain/core/output_parsers";
 import { PROMPT_PROJECT } from "../../../../utils/prompt";
 import { prisma } from "../../../../../lib/prisma";
-
-const llm = new ChatGroq({
-  model: "llama-3.3-70b-versatile",
-  temperature: 0.3,
-  maxTokens: 8192,
-  apiKey: process.env.GROQ_API_KEY,
-  verbose: true,
-});
+import { getGroqApiKeyServer } from "../../../../utils/apiKeys.server";
 
 const prompt = ChatPromptTemplate.fromMessages([
   ["system", PROMPT_PROJECT as string],
@@ -19,10 +12,28 @@ const prompt = ChatPromptTemplate.fromMessages([
 
 const output_parsers = new StringOutputParser();
 
-const chain = prompt.pipe(llm).pipe(output_parsers);
-
 export async function POST(req: Request) {
   try {
+    // Get API key from database or environment
+    const apiKey = await getGroqApiKeyServer();
+    if (!apiKey) {
+      return NextResponse.json(
+        { error: "Groq API key not found. Please add it in your profile settings." },
+        { status: 500 }
+      );
+    }
+
+    // Initialize LLM with dynamic API key
+    const llm = new ChatGroq({
+      model: "llama-3.3-70b-versatile",
+      temperature: 0.3,
+      maxTokens: 8192,
+      apiKey: apiKey,
+      verbose: true,
+    });
+
+    const chain = prompt.pipe(llm).pipe(output_parsers);
+
     const { topic, learning_objectives, projectId } = await req.json();
 
     const res = await chain.invoke({

@@ -3,13 +3,7 @@ import { NextResponse } from "next/server";
 import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
 import { StringOutputParser } from "@langchain/core/output_parsers";
 import { PROMPT_COURSE } from "../../../../utils/prompt";
-
-const llm = new ChatGoogleGenerativeAI({
-  model: "gemini-2.0-flash-001",
-  temperature: 0,
-  apiKey: process.env.GEMINI_API_KEY2,
-  verbose: true,
-});
+import { getGeminiApiKeyServer } from "../../../../utils/apiKeys.server";
 
 const prompt = ChatPromptTemplate.fromMessages([
   ["system", PROMPT_COURSE as string],
@@ -26,10 +20,27 @@ const prompt = ChatPromptTemplate.fromMessages([
 
 const outputParser = new StringOutputParser();
 
-const chain = prompt.pipe(llm).pipe(outputParser);
-
 export async function POST(req: Request) {
   try {
+    // Get API key from database or environment
+    const apiKey = await getGeminiApiKeyServer();
+    if (!apiKey) {
+      return NextResponse.json(
+        { error: "Gemini API key not found. Please add it in your profile settings." },
+        { status: 500 }
+      );
+    }
+
+    // Initialize LLM with dynamic API key
+    const llm = new ChatGoogleGenerativeAI({
+      model: "gemini-2.0-flash-001",
+      temperature: 0,
+      apiKey: apiKey,
+      verbose: true,
+    });
+
+    const chain = prompt.pipe(llm).pipe(outputParser);
+
     const { topic, time_duration, level, description } = await req.json();
 
     const res = await chain.invoke({
