@@ -58,7 +58,6 @@ const ProfilePage = () => {
           <GitHubHeatmap userName={userData.userName} />
         </div>
 
-        {/* Profile Form Card */}
         <div className=" rounded-2xl shadow-[0_8px_0_0_rgba(0,0,0,0.1)] border-4 border-slate-800 p-6 transform transition-transform hover:-translate-y-1 relative z-0">
           <div className="mb-4">
             <h2 className="text-2xl font-bold text-white-500 uppercase tracking-wide">

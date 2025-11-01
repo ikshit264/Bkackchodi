@@ -19,8 +19,10 @@ model User {
   githubId      String?  @unique // Storing GitHub ID to avoid duplicates
   githubOwnerid String?  @unique // Storing GitHub Owner ID to avoid duplicates
   githubToken   String? // Storing GitHub token for user
+  geminiApiKey  String? // Storing Gemini API key for user
+  groqApiKey    String? // Storing Groq API key for user
   name          String
-  lastName      String
+  lastName      String 
   userName      String  @unique  
   email         String   @unique
   avatar        String? // GitHub profile picture URL

@@ -3,20 +3,68 @@
 
 "use client"
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { User, Mail, Lock, Save, CheckCircle, AlertCircle } from "lucide-react";
-import { UpdateUserDetails } from "../actions/user";
+import { User, Mail, Lock, Save, CheckCircle, AlertCircle, Eye, EyeOff, Key } from "lucide-react";
+import { UpdateUserApiDetails, UpdateUserDetails } from "../actions/user";
 
 const ProfileForm = ({ user }: { user: any }) => {
   const [formData, setFormData] = useState({
     name: user.name,
     lastName: user.lastName,
+    geminiApiKey: user.geminiApiKey || "",
+    groqApiKey: user.groqApiKey || "",
   });
 
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
   const [messageType, setMessageType] = useState<"success" | "error" | "">("");
+  const [showApiKeys, setShowApiKeys] = useState(false);
+  const [showGeminiKey, setShowGeminiKey] = useState(false);
+  const [showGroqKey, setShowGroqKey] = useState(false);
+
+  // Load API keys from localStorage or database on mount
+  useEffect(() => {
+    const loadApiKeys = async () => {
+      // Check localStorage first
+      const localGemini = localStorage.getItem("gemini_api_key");
+      const localGroq = localStorage.getItem("groq_api_key");
+
+      if (localGemini || localGroq) {
+        setFormData((prev) => ({
+          ...prev,
+          geminiApiKey: localGemini || prev.geminiApiKey,
+          groqApiKey: localGroq || prev.groqApiKey,
+        }));
+      }
+
+      // If no localStorage, fetch from database
+      if (!localGemini || !localGroq) {
+        try {
+          const response = await fetch("/api/user/api-keys");
+          if (response.ok) {
+            const data = await response.json();
+            setFormData((prev) => ({
+              ...prev,
+              geminiApiKey: data.geminiApiKey || prev.geminiApiKey || "",
+              groqApiKey: data.groqApiKey || prev.groqApiKey || "",
+            }));
+            // Store in localStorage if found
+            if (data.geminiApiKey) {
+              localStorage.setItem("gemini_api_key", data.geminiApiKey);
+            }
+            if (data.groqApiKey) {
+              localStorage.setItem("groq_api_key", data.groqApiKey);
+            }
+          }
+        } catch (error) {
+          console.error("Error loading API keys:", error);
+        }
+      }
+    };
+
+    loadApiKeys();
+  }, []);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -29,7 +77,20 @@ const ProfileForm = ({ user }: { user: any }) => {
     setMessageType("");
 
     try {
-      const res = await UpdateUserDetails(user.id, formData);
+      // Update basic profile info
+      const res = await UpdateUserDetails(user.id, {
+        name: formData.name,
+        lastName: formData.lastName,
+      });
+
+      
+      const gemini_api_key = formData.geminiApiKey ? formData.geminiApiKey.trim() : '';
+      const groq_api_key = formData.groqApiKey ? formData.groqApiKey.trim() : '';
+      
+      const apiRes = await UpdateUserApiDetails(user.id, {
+        gemini_api_key,
+        groq_api_key
+      })
 
       if (res) {
         setMessage("Profile updated successfully!");
@@ -183,6 +244,105 @@ const ProfileForm = ({ user }: { user: any }) => {
             </div>
           </motion.div>
         </div>
+
+        {/* API Keys Section */}
+        <motion.div
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.5, delay: 0.65 }}
+          className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700"
+        >
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center space-x-2">
+              <Key size={20} className="text-primary-500" />
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                AI API Keys
+              </h3>
+            </div>
+            <button
+              type="button"
+              onClick={() => setShowApiKeys(!showApiKeys)}
+              className="text-sm text-primary-500 hover:text-primary-600 transition-colors"
+            >
+              {showApiKeys ? "Hide" : "Show"} API Keys
+            </button>
+          </div>
+
+          {showApiKeys && (
+            <div className="space-y-4">
+              {/* Gemini API Key */}
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3 }}
+              >
+                <label className="label">
+                  <span className="flex items-center space-x-2">
+                    <Key size={16} className="text-primary-500" />
+                    <span className="text-primary-500">Gemini API Key</span>
+                  </span>
+                </label>
+                <div className="relative">
+                  <motion.input
+                    whileFocus={{ scale: 1.02 }}
+                    type={showGeminiKey ? "text" : "password"}
+                    name="geminiApiKey"
+                    value={formData.geminiApiKey}
+                    onChange={handleChange}
+                    className="input-field pr-10"
+                    placeholder="Enter your Gemini API key"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowGeminiKey(!showGeminiKey)}
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-neutral-600 dark:text-neutral-400 hover:text-primary-500"
+                  >
+                    {showGeminiKey ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
+                </div>
+                <p className="mt-1 text-xs text-neutral-500">
+                  Used for Gemini AI services
+                </p>
+              </motion.div>
+
+              {/* Groq API Key */}
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3 }}
+              >
+                <label className="label">
+                  <span className="flex items-center space-x-2">
+                    <Key size={16} className="text-primary-500" />
+                    <span className="text-primary-500">Groq API Key</span>
+                  </span>
+                </label>
+                <div className="relative">
+                  <motion.input
+                    whileFocus={{ scale: 1.02 }}
+                    type={showGroqKey ? "text" : "password"}
+                    name="groqApiKey"
+                    value={formData.groqApiKey}
+                    onChange={handleChange}
+                    className="input-field pr-10"
+                    placeholder="Enter your Groq API key"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowGroqKey(!showGroqKey)}
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-neutral-600 dark:text-neutral-400 hover:text-primary-500"
+                  >
+                    {showGroqKey ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
+                </div>
+                <p className="mt-1 text-xs text-neutral-500">
+                  Used for Groq AI services
+                </p>
+              </motion.div>
+            </div>
+          )}
+        </motion.div>
+
           {/* Submit Button */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}

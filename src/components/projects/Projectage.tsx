@@ -9,6 +9,7 @@ import {
   AlertCircle,
   Play,
   Loader,
+  X,
 } from "lucide-react";
 import axios from "axios";
 import { UserId as fetchUserId } from "../../utils/userId";
@@ -35,6 +36,13 @@ const ProjectDetail = ({ project: initialProject }) => {
   const userId = fetchUserId();
   const [user, setUser] = useState(null);
   const [activeTab, setActiveTab] = useState("projects");
+  const [showRepoModal, setShowRepoModal] = useState(false);
+  const [repoName, setRepoName] = useState("");
+  const [existingRepos, setExistingRepos] = useState<string[]>([]);
+  const [loadingRepos, setLoadingRepos] = useState(false);
+  const [repoError, setRepoError] = useState("");
+  const [matchingRepos, setMatchingRepos] = useState<string[]>([]);
+  const [debouncedRepoName, setDebouncedRepoName] = useState("");
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -54,6 +62,82 @@ const ProjectDetail = ({ project: initialProject }) => {
   useEffect(() => {
     setSteps(initialProject.steps);
   }, [initialProject.steps]);
+
+  // Simple edit distance calculation
+  const getEditDistance = useCallback((str1: string, str2: string): number => {
+    const matrix: number[][] = [];
+    for (let i = 0; i <= str2.length; i++) {
+      matrix[i] = [i];
+    }
+    for (let j = 0; j <= str1.length; j++) {
+      matrix[0][j] = j;
+    }
+    for (let i = 1; i <= str2.length; i++) {
+      for (let j = 1; j <= str1.length; j++) {
+        if (str2.charAt(i - 1) === str1.charAt(j - 1)) {
+          matrix[i][j] = matrix[i - 1][j - 1];
+        } else {
+          matrix[i][j] = Math.min(
+            matrix[i - 1][j - 1] + 1, // substitution
+            matrix[i][j - 1] + 1, // insertion
+            matrix[i - 1][j] + 1 // deletion
+          );
+        }
+      }
+    }
+    return matrix[str2.length][str1.length];
+  }, []);
+
+  // Helper function to calculate string similarity (simple Levenshtein-like)
+  const calculateSimilarity = useCallback((str1: string, str2: string): number => {
+    const longer = str1.length > str2.length ? str1 : str2;
+    const shorter = str1.length > str2.length ? str2 : str1;
+    const editDistance = getEditDistance(longer, shorter);
+    if (longer.length === 0) return 1.0;
+    return (longer.length - editDistance) / longer.length;
+  }, [getEditDistance]);
+
+  // Debounce repo name input
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedRepoName(repoName);
+    }, 300); // 300ms debounce delay
+
+    return () => clearTimeout(timer);
+  }, [repoName]);
+
+  // Filter matching repos based on debounced input
+  useEffect(() => {
+    if (!debouncedRepoName.trim()) {
+      setMatchingRepos([]);
+      return;
+    }
+
+    const searchTerm = debouncedRepoName.trim().toLowerCase();
+    
+    // Find exact matches first, then similar matches
+    const exactMatches = existingRepos.filter(
+      (repo) => repo.toLowerCase() === searchTerm
+    );
+    
+    // Find repos that contain the search term or are similar
+    const similarMatches = existingRepos.filter(
+      (repo) => {
+        const repoLower = repo.toLowerCase();
+        return (
+          repoLower !== searchTerm && // Exclude exact matches
+          (repoLower.includes(searchTerm) || 
+           searchTerm.includes(repoLower) ||
+           repoLower.startsWith(searchTerm) ||
+           calculateSimilarity(repoLower, searchTerm) > 0.5)
+        );
+      }
+    );
+
+    // Combine exact matches first, then similar matches (limit to 20 for performance)
+    const allMatches = [...exactMatches, ...similarMatches].slice(0, 20);
+    setMatchingRepos(allMatches);
+  }, [debouncedRepoName, existingRepos, calculateSimilarity]);
 
   const getProjectStatus = useCallback(() => {
     if (!steps || steps.length === 0) return "Not Started";
@@ -111,7 +195,68 @@ const ProjectDetail = ({ project: initialProject }) => {
     console.log("Steps", steps);
   };
 
-  const handleStartProject = async () => {
+  const fetchRepos = async () => {
+    try {
+      setLoadingRepos(true);
+      setRepoError("");
+      const response = await axios.get<{ repos: Array<{ name: string; fullName: string; private: boolean }> }>("/api/github/repos");
+      if (response.status === 200 && response.data.repos) {
+        const repoNames = response.data.repos.map((repo) => repo.name);
+        setExistingRepos(repoNames);
+      } else {
+        throw new Error("Failed to fetch repositories");
+      }
+    } catch (err) {
+      console.error("Error fetching repos:", err);
+      const error = err as { response?: { data?: { error?: string } } };
+      setRepoError(error.response?.data?.error || "Failed to fetch repositories");
+    } finally {
+      setLoadingRepos(false);
+    }
+  };
+
+  const handleStartProjectClick = () => {
+    setShowRepoModal(true);
+    setRepoName(project.title);
+    setRepoError("");
+    setMatchingRepos([]);
+    setDebouncedRepoName("");
+    fetchRepos();
+  };
+
+  const validateAndSubmitRepoName = () => {
+    if (!repoName || repoName.trim() === "") {
+      setRepoError("Repository name cannot be empty");
+      return;
+    }
+
+    const sanitizedName = repoName.trim().toLowerCase();
+    
+    // Check if repo name matches any existing repo
+    if (existingRepos.some((repo) => repo.toLowerCase() === sanitizedName)) {
+      setRepoError("A repository with this name already exists. Please choose a different name.");
+      return;
+    }
+
+    // Validate repo name format (GitHub rules)
+    const githubRepoNameRegex = /^[a-z0-9._-]+$/i;
+    if (!githubRepoNameRegex.test(repoName.trim())) {
+      setRepoError("Repository name can only contain letters, numbers, periods, hyphens, and underscores.");
+      return;
+    }
+
+    if (repoName.trim().length > 100) {
+      setRepoError("Repository name must be 100 characters or less.");
+      return;
+    }
+
+    // Name is valid and unique
+    setShowRepoModal(false);
+    setRepoError("");
+    startProjectWithRepoName(repoName.trim());
+  };
+
+  const startProjectWithRepoName = async (repoNameToUse: string) => {
     try {
       setLoading(true);
 
@@ -136,12 +281,12 @@ const ProjectDetail = ({ project: initialProject }) => {
 
       // Get the batchId from the project
       const batchId = project.batchId;
-      const projectTitle = batchId ? `${batchId}-Batch` : project.title;
+      const projectTitle = batchId ? `${batchId}-Batch` : repoNameToUse;
 
-      // Call CreateIssue function
+      // Call CreateIssue function with the validated repo name
       const updatedSteps = await CreateIssue(
         user.githubId,
-        project.title,
+        repoNameToUse, // Use validated repo name instead of project.title
         "user",
         project.id,
         projectTitle,
@@ -294,9 +439,9 @@ const ProjectDetail = ({ project: initialProject }) => {
                   {/* Start Project Button - Only show if no steps */}
                   {(!steps || steps.length === 0) && (
                     <button
-                      onClick={handleStartProject}
-                      disabled={loading}
-                      className="flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg shadow transition-colors"
+                      onClick={handleStartProjectClick}
+                      disabled={loading || loadingRepos}
+                      className="flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg shadow transition-colors disabled:bg-blue-400"
                     >
                       <Play size={16} className="mr-2" /> Start Project
                     </button>
@@ -459,6 +604,179 @@ const ProjectDetail = ({ project: initialProject }) => {
           </div>
         )}
       </div>
+
+      {/* Repository Name Input Modal */}
+      {showRepoModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
+            <div className="flex justify-between items-center p-6 border-b">
+              <h2 className="text-xl font-bold text-gray-800">
+                Enter Repository Name
+              </h2>
+              <button
+                onClick={() => {
+                  setShowRepoModal(false);
+                  setRepoError("");
+                  setRepoName("");
+                  setMatchingRepos([]);
+                  setDebouncedRepoName("");
+                }}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                <X size={24} />
+              </button>
+            </div>
+            <div className="p-6">
+              {loadingRepos ? (
+                <div className="flex items-center justify-center py-8">
+                  <Loader size={24} className="animate-spin text-blue-600 mr-3" />
+                  <span className="text-gray-600">Fetching repositories...</span>
+                </div>
+              ) : (
+                <>
+                  <div className="mb-4">
+                    <label
+                      htmlFor="repoName"
+                      className="block text-sm font-medium text-gray-700 mb-2"
+                    >
+                      Repository Name
+                    </label>
+                    <input
+                      type="text"
+                      id="repoName"
+                      value={repoName}
+                      onChange={(e) => {
+                        setRepoName(e.target.value);
+                        setRepoError("");
+                      }}
+                      placeholder="Enter a unique repository name"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          validateAndSubmitRepoName();
+                        }
+                      }}
+                    />
+                    {repoError && (
+                      <p className="mt-2 text-sm text-red-600">{repoError}</p>
+                    )}
+                    <p className="mt-2 text-xs text-gray-500">
+                      Repository name must be unique and can only contain letters, numbers, periods, hyphens, and underscores.
+                    </p>
+                  </div>
+                  {/* Real-time matching repos display */}
+                  <div className="mb-4">
+                    {repoName.trim() ? (
+                      <>
+                        <p className="text-sm text-gray-600 mb-2">
+                          <span className="font-medium">
+                            {matchingRepos.length > 0
+                              ? `Similar repositories (${matchingRepos.length} found):`
+                              : "No similar repositories found"}
+                          </span>
+                        </p>
+                        <div className="mt-2 max-h-40 overflow-y-auto border border-gray-200 rounded-lg p-2">
+                          {matchingRepos.length > 0 ? (
+                            <div className="space-y-1">
+                              {matchingRepos.map((repo, idx) => {
+                                const isExactMatch =
+                                  repo.toLowerCase() === repoName.trim().toLowerCase();
+                                return (
+                                  <div
+                                    key={idx}
+                                    className={`flex items-center px-2 py-1 rounded text-xs ${
+                                      isExactMatch
+                                        ? "bg-red-100 text-red-800 border border-red-300"
+                                        : "bg-yellow-50 text-yellow-800 border border-yellow-200"
+                                    }`}
+                                  >
+                                    {isExactMatch ? (
+                                      <>
+                                        <AlertCircle size={14} className="mr-2" />
+                                        <span className="font-semibold">
+                                          {repo} (Exact match - Not available)
+                                        </span>
+                                      </>
+                                    ) : (
+                                      <>
+                                        <Clock size={14} className="mr-2" />
+                                        <span>{repo} (Similar)</span>
+                                      </>
+                                    )}
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          ) : (
+                            <div className="flex items-center px-2 py-1 rounded text-xs bg-green-50 text-green-800 border border-green-200">
+                              <CheckCircle size={14} className="mr-2" />
+                              <span>Repository name is available!</span>
+                            </div>
+                          )}
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <p className="text-sm text-gray-600 mb-2">
+                          <span className="font-medium">
+                            All repositories ({existingRepos.length}):
+                          </span>
+                        </p>
+                        <div className="mt-2 max-h-60 overflow-y-auto border border-gray-200 rounded-lg p-3 bg-gray-50">
+                          {existingRepos.length > 0 ? (
+                            <div className="space-y-1">
+                              {existingRepos.map((repo, idx) => (
+                                <div
+                                  key={idx}
+                                  className="px-3 py-2 text-sm bg-white border border-gray-200 rounded hover:bg-blue-50 hover:border-blue-300 transition-colors"
+                                >
+                                  <span className="text-gray-800 font-mono">{repo}</span>
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <p className="text-sm text-gray-500 italic text-center py-4">
+                              No existing repositories
+                            </p>
+                          )}
+                        </div>
+                      </>
+                    )}
+                  </div>
+                  <div className="flex justify-end space-x-3">
+                    <button
+                      onClick={() => {
+                        setShowRepoModal(false);
+                        setRepoError("");
+                        setRepoName("");
+                        setMatchingRepos([]);
+                        setDebouncedRepoName("");
+                      }}
+                      className="px-4 py-2 text-gray-700 bg-gray-200 hover:bg-gray-300 rounded-lg font-medium transition-colors"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={validateAndSubmitRepoName}
+                      disabled={loading || !repoName.trim()}
+                      className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors disabled:bg-blue-400 disabled:cursor-not-allowed"
+                    >
+                      {loading ? (
+                        <span className="flex items-center">
+                          <Loader size={16} className="animate-spin mr-2" />
+                          Starting...
+                        </span>
+                      ) : (
+                        "Start Project"
+                      )}
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -55,6 +55,25 @@ export async function UpdateUserDetails(id : string, data : any) {
   return response;
 }
 
+export async function UpdateUserApiDetails(id : string, data : any){
+  if (!id) {
+    throw new Error("UpdateUserDetails: Provided userName is invalid or undefined");
+  }
+  const response = await prisma.user.update({
+    where: {
+      id: id
+    },
+    data: {
+      geminiApiKey: data.gemini_api_key ?? '',
+      groqApiKey: data.groq_api_key ?? ''
+    }
+  });
+  if (!response) {
+    throw new Error("User not found in Clerk");
+  }
+  return response;
+}
+
 export async function GetUserIdByName(userName : string){
   const res = await GetUserByUserName(userName);
   return res.id;
