@@ -1,50 +1,65 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextRequest, NextResponse } from "next/server";
 import getPrismaClient from "../../../../lib/prisma";
 import { fetchGithubStats, fullOrPartialScoreFetch, processCalendar, updateRanksAtomic } from "../../../../lib/BackendHelpers";
 
 const prisma = getPrismaClient();
 
-
-// ----- ROUTE HANDLERS -----
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
-    // console.log('searchParams', searchParams);
     const userName = searchParams.get("userName");
     const year = searchParams.get("year");
-    // console.log('userName', userName);
+
     if (!userName) {
       return NextResponse.json({ error: "userName required" }, { status: 400 });
     }
-    // Look up User and Score
+
     const user = await prisma.user.findFirst({ where: { userName } });
     if (!user)
       return NextResponse.json({ error: "user not found" }, { status: 404 });
+
     const score = await prisma.score.findUnique({ where: { userId: user.id } });
-    // Always send matrix and all required props to the client
-    // If not present (because of cold start, old DB, or never POSTed), send empty arrays/zeros instead of undefined
-    let temp = [];
-    if (
-      score &&
-      typeof score.lastUpdatedDate === "object" &&
-      user.githubToken
-    ) {
+
+    let temp: any[] = [];
+    const availableYears: number[] = [];
+    let githubCreatedAt: string | null = null;
+
+    if (score && typeof score.lastUpdatedDate === "object" && user.githubToken) {
       const fromDate = year ? `${year}-01-01T00:00:00Z` : undefined;
       const toDate = year ? `${year}-12-31T23:59:59Z` : undefined;
+
       const coll = await fetchGithubStats({
         userName,
         token: user.githubToken,
         fromDate,
         toDate,
       });
-      const { matrix } = processCalendar(coll.contributionCalendar);
-      temp = matrix;
+
+      // ✅ extract safely
+      githubCreatedAt = coll.githubCreatedAt ?? null;
+
+      const contributions = coll.contributionsCollection;
+      if (contributions?.contributionCalendar) {
+        const { matrix } = processCalendar(contributions.contributionCalendar);
+        temp = matrix;
+      }
+
+      // ✅ Build available years from github account creation
+      if (githubCreatedAt) {
+        const createdYear = new Date(githubCreatedAt).getFullYear();
+        const currentYear = new Date().getFullYear();
+        for (let y = createdYear; y <= currentYear; y++) {
+          availableYears.push(y);
+        }
+      }
     }
+
     const matrix: Array<Array<{ date: string; count: number } | null>> = temp;
-    // Compose response
+
     return NextResponse.json({
       ...score,
-      matrix: matrix, // guarantee a matrix even if user or score is new
+      matrix,
       totalActiveDays: score?.totalActiveDays ?? 0,
       currentStreak: score?.currentStreak ?? 0,
       longestStreak: score?.longestStreak ?? 0,
@@ -56,14 +71,17 @@ export async function GET(req: NextRequest) {
       contribution: score?.contribution ?? 0,
       lastUpdatedDate: score?.lastUpdatedDate ?? null,
       rank: score?.rank ?? null,
+      githubCreatedAt, // ✅ include it
+      availableYears,  // ✅ consistent naming
     });
-  } catch (err) {
+  } catch (err: any) {
     return NextResponse.json(
       { error: err.message || err.toString() },
       { status: 500 }
     );
   }
 }
+
 
 export async function POST(req: NextRequest) {
   try {
