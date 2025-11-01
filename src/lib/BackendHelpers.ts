@@ -9,6 +9,7 @@ export async function fetchGithubStats({ userName, token, fromDate, toDate }) {
   const query = `
     query($userName: String!, $from: DateTime, $to: DateTime) {
       user(login: $userName) {
+      createdAt   
         contributionsCollection(from: $from, to: $to) {
           contributionCalendar {
             totalContributions
@@ -43,7 +44,11 @@ export async function fetchGithubStats({ userName, token, fromDate, toDate }) {
   });
   const json = await res.json();
   if (!json.data?.user) throw new Error(json.errors?.[0]?.message || "No user");
-  return json.data.user.contributionsCollection;
+return {
+  contributionsCollection: json.data.user.contributionsCollection,
+  githubCreatedAt: json.data.user.createdAt,
+};
+
 }
 
 // Process heatmap-style data like frontend (for contributions matrix, streaks, etc)
@@ -168,12 +173,14 @@ export async function fullOrPartialScoreFetch({
   const toDate = year ? `${year}-12-31T23:59:59Z` : undefined;
 
   // 3. Fetch github with year filter
-  const coll = await fetchGithubStats({
+  const colls = await fetchGithubStats({
     userName,
     token: githubToken,
     fromDate,
     toDate,
   });
+
+  const coll = colls.contributionsCollection;
 
   // 4. Process calendar data
   const { matrix, totalActiveDays, currentStreak, longestStreak } =
