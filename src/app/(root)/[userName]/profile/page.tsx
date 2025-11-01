@@ -63,7 +63,7 @@ const ProfilePage = () => {
   if (!user) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center">
-        <div className="bg-white rounded-2xl shadow-lg p-8 border-4 border-red-500">
+        <div className=" rounded-2xl shadow-lg p-8 border-4 border-red-500">
           <div className="text-center text-red-500 text-xl font-bold">
             User not found
           </div>
@@ -86,7 +86,7 @@ const ProfilePage = () => {
     <div className="min-h-screen bg-gradient-to-br p-6">
       <div className="max-w-6xl mx-auto space-y-6">
         {/* Header Card with Score */}
-        <div className="bg-white rounded-2xl shadow-[0_8px_0_0_rgba(0,0,0,0.1)] border-4 border-slate-800 p-6 transform transition-transform hover:-translate-y-1 relative z-10">
+        <div className="rounded-2xl shadow-[0_8px_0_0_rgba(0,0,0,0.1)] border-4 border-slate-800 p-6 transform transition-transform hover:-translate-y-1 relative z-10">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             {/* Username Section */}
             <div className="flex items-center gap-3">
@@ -109,7 +109,7 @@ const ProfilePage = () => {
                 <div className="text-sm text-slate-500 font-semibold uppercase tracking-wide">
                   Developer Profile
                 </div>
-                <div className="text-2xl font-bold text-slate-800">
+                <div className="text-2xl font-bold text-white-500">
                   @{userData.userName}
                 </div>
               </div>
@@ -136,9 +136,9 @@ const ProfilePage = () => {
                 className="absolute top-full left-1/2 -translate-x-1/2 mt-4 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 pointer-events-none group-hover:pointer-events-auto"
                 style={{ zIndex: 9999 }}
               >
-                <div className="bg-white rounded-2xl shadow-[0_12px_24px_0_rgba(0,0,0,0.25)] border-4 border-slate-800 p-6">
+                <div className="bg-gradient-to-r rounded-2xl shadow-[0_12px_24px_0_rgba(0,0,0,0.25)] border-4 border-slate-800 p-6">
                   <div className="text-center mb-4">
-                    <h3 className="text-lg font-bold text-slate-800 uppercase tracking-wide">
+                    <h3 className="text-lg font-bold text-white-500 uppercase tracking-wide">
                       Contribution Stats
                     </h3>
                     <div className="h-1 w-16 bg-gradient-to-r from-blue-500 to-purple-600 mx-auto mt-2 rounded-full"></div>
@@ -194,9 +194,9 @@ const ProfilePage = () => {
         </div>
 
         {/* Profile Form Card */}
-        <div className="bg-white rounded-2xl shadow-[0_8px_0_0_rgba(0,0,0,0.1)] border-4 border-slate-800 p-6 transform transition-transform hover:-translate-y-1 relative z-0">
+        <div className=" rounded-2xl shadow-[0_8px_0_0_rgba(0,0,0,0.1)] border-4 border-slate-800 p-6 transform transition-transform hover:-translate-y-1 relative z-0">
           <div className="mb-4">
-            <h2 className="text-2xl font-bold text-slate-800 uppercase tracking-wide">
+            <h2 className="text-2xl font-bold text-white-500 uppercase tracking-wide">
               Profile Settings
             </h2>
             <div className="h-1 w-24 bg-gradient-to-r from-blue-500 to-purple-600 mt-2 rounded-full"></div>
@@ -205,9 +205,9 @@ const ProfilePage = () => {
         </div>
 
         {/* GitHub Heatmap Card */}
-        <div className="bg-white rounded-2xl shadow-[0_8px_0_0_rgba(0,0,0,0.1)] border-4 border-slate-800 p-6 transform transition-transform hover:-translate-y-1 relative z-0">
+        <div className=" rounded-2xl shadow-[0_8px_0_0_rgba(0,0,0,0.1)] border-4 border-slate-800 p-6 transform transition-transform hover:-translate-y-1 relative z-0">
           <div className="mb-4">
-            <h2 className="text-2xl font-bold text-slate-800 uppercase tracking-wide">
+            <h2 className="text-2xl font-bold text-white-500 uppercase tracking-wide">
               Contribution Activity
             </h2>
             <div className="h-1 w-24 bg-gradient-to-r from-emerald-500 to-teal-600 mt-2 rounded-full"></div>
