@@ -102,11 +102,30 @@ export async function GET(request: Request) {
 
     console.log(`🚀 Called score API (forceFetch: ${forceFetch})`);
 
-    return NextResponse.redirect(new URL(`/${dbUser.userName}/profile`, request.url));
+    const profileUrl = `/${dbUser.userName}/profile`;
+    
+    // Check if request is from fetch (client-side) or direct navigation (server redirect)
+    const isClientRequest = request.headers.get("accept")?.includes("application/json") || 
+                           request.headers.get("x-requested-with") === "XMLHttpRequest";
+
+    if (isClientRequest) {
+      // Return JSON for client-side redirect
+      return NextResponse.json(
+        { 
+          success: true, 
+          userName: dbUser.userName,
+          redirectUrl: profileUrl 
+        },
+        { status: 200 }
+      );
+    }
+
+    // Server-side redirect
+    return NextResponse.redirect(new URL(profileUrl, request.url));
   } catch (error) {
     console.error("🔥 Error syncing user:", error);
     return NextResponse.json(
-      { error: "Internal Server Error" },
+      { error: "Internal Server Error", details: error instanceof Error ? error.message : String(error) },
       { status: 500 }
     );
   }

@@ -239,11 +239,7 @@ const ProjectDetail = ({ project: initialProject }) => {
     }
 
     // Validate repo name format (GitHub rules)
-    const githubRepoNameRegex = /^[a-z0-9._-]+$/i;
-    if (!githubRepoNameRegex.test(repoName.trim())) {
-      setRepoError("Repository name can only contain letters, numbers, periods, hyphens, and underscores.");
-      return;
-    }
+   
 
     if (repoName.trim().length > 100) {
       setRepoError("Repository name must be 100 characters or less.");
