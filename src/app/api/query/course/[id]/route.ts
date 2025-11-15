@@ -21,10 +21,43 @@ export async function GET(req: NextRequest, { params }) {
 
     const course = await prisma.course.findFirst({
       where: {
-        user: {
-          clerkId: user.id,
+        OR: [
+          {
+            user: {
+              clerkId: user.id,
+            },
+          },
+          {
+            accesses: {
+              some: {
+                user: {
+                  clerkId: user.id,
+                },
+              },
+            },
+          },
+        ],
+        id: id,
+        isDeleted: false,
+      },
+      include: {
+        batch: {
+          include: {
+            projects: {
+              select: {
+                id: true,
+                title: true,
+                description: true,
+                level: true,
+                status: true,
+                position: true,
+              },
+            },
+          },
+          orderBy: {
+            number: "asc",
+          },
         },
-        id: id, // Ensure id is properly formatted
       },
     });
 

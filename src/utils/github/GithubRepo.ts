@@ -99,3 +99,40 @@ function sanitizeRepoName(input: string): string {
   }
   return name;
 }
+
+/**
+ * Delete a GitHub repository
+ * @param userId - Clerk user ID
+ * @param repoName - Repository name to delete
+ * @returns true if successful, throws error if fails
+ */
+export async function deleteRepo(userId: string, repoName: string): Promise<boolean> {
+  const ACCESS_TOKEN = await GithubTokenExtract(userId);
+
+  const headers = {
+    Authorization: `Bearer ${ACCESS_TOKEN}`,
+    "Content-Type": "application/json",
+    "X-GitHub-Api-Version": "2022-11-28",
+  };
+
+  try {
+    // Get user's GitHub username
+    const userResponse = await axios.get("https://api.github.com/user", { headers });
+    const username = userResponse.data.login;
+
+    // Delete the repository
+    const response = await axios.delete(
+      `https://api.github.com/repos/${username}/${repoName}`,
+      { headers }
+    );
+
+    if (response.status === 204) {
+      return true; // Successfully deleted
+    }
+
+    throw new Error(`Failed to delete repo: ${response.status}`);
+  } catch (error: any) {
+    console.error("❌ Error deleting repo:", error.response?.data || error.message);
+    throw error;
+  }
+}

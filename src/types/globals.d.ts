@@ -9,4 +9,7 @@ declare global {
       role?: Roles
     }
   }
+  // Prisma client instance on global for development reuse
+  // eslint-disable-next-line no-var
+  var prisma: import("@prisma/client").PrismaClient
 }

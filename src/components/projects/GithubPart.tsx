@@ -35,7 +35,7 @@ const GithubPart = ({ projectId }) => {
       }
     };
     fetchProject();
-  }, [projectId]);
+  }, [projectId, url]);
 
   if (!project) {
     return <p className="text-gray-600">Loading project...</p>;
@@ -92,6 +92,10 @@ const GithubPart = ({ projectId }) => {
       const { jsonObject } = await response.json();
       await PushToDB(jsonObject);
       setEvaluationResult(JSON.parse(jsonObject));
+      
+      // Refresh project data to get updated aiEvaluationScore
+      const updatedProject = await GetProjectByProjectId(projectId);
+      setProject(updatedProject);
     } catch (error) {
       console.error("Evaluation error:", error);
       setEvaluationResult({ error: "Failed to evaluate the repository." });
@@ -202,9 +206,23 @@ const GithubPart = ({ projectId }) => {
                   ))}
                 </ul>
               </div>
-              <p className="text-lg font-bold text-black">
-                🏆 Final Score: {githubData["Final Score"]} / 100
-              </p>
+              {/* Show evaluation score from database if available, otherwise from GithubData */}
+              {project.aiEvaluationScore !== null && project.aiEvaluationScore !== undefined ? (
+                <div className="space-y-2">
+                  <p className="text-lg font-bold text-black">
+                    🏆 Final Score: {project.aiEvaluationScore.toFixed(2)} / 100
+                  </p>
+                  {project.evaluatedAt && (
+                    <p className="text-sm text-gray-500">
+                      Evaluated on: {new Date(project.evaluatedAt).toLocaleDateString()}
+                    </p>
+                  )}
+                </div>
+              ) : (
+                <p className="text-lg font-bold text-black">
+                  🏆 Final Score: {githubData["Final Score"] || "N/A"} / 100
+                </p>
+              )}
             </>
           )}
         </div>

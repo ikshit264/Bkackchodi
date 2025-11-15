@@ -16,7 +16,17 @@ import { Project } from "./schema/Project";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 
-const ExpandingAccordion = ({ items }: { items: Project[] }) => {
+const ExpandingAccordion = ({ 
+  items,
+  courseId,
+  batchId,
+  role,
+}: { 
+  items: Project[];
+  courseId?: string | null;
+  batchId?: string | null;
+  role?: 'OWNER'|'READ_ONLY'|'SYNC_COPY'|'COPY'|null;
+}) => {
   const [hoveredId, setHoveredId] = useState<string | null>(null);
   const parentRef = useRef<HTMLDivElement | null>(null);
   const gap = 20;

@@ -12,9 +12,10 @@ interface BatchListProps {
   expandedBatch: string | null;
   onBatchToggle: (batchId: string) => void;
   onStartProject: (projectId: string) => void;
+  canEdit?: boolean;
 }
 
-const BatchList: React.FC<BatchListProps> = ({ batches, expandedBatch, onBatchToggle, onStartProject }) => {
+const BatchList: React.FC<BatchListProps> = ({ batches, expandedBatch, onBatchToggle, onStartProject, canEdit = true }) => {
   return (
     <div className="mt-6">
       <h3 className="text-xl font-bold mb-4 text-gray-700">Batches</h3>
@@ -47,6 +48,7 @@ const BatchList: React.FC<BatchListProps> = ({ batches, expandedBatch, onBatchTo
                       key={project.id}
                       project={{ ...project, batchId: id }}
                       onStartProject={onStartProject}
+                      canEdit={canEdit}
                     />
                   ))
                 ) : (

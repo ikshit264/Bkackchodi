@@ -34,7 +34,10 @@ const AiCall = ({
   const [timeDuration, setTimeDuration] = useState("");
   const [level, setLevel] = useState("Easy");
   const [description, setDescription] = useState("");
+  const [groupId, setGroupId] = useState<string>("");
+  const [groups, setGroups] = useState<Array<{id: string; name: string; type?: string}>>([]);
   const [loading, setLoading] = useState(false);
+  const [loadingGroups, setLoadingGroups] = useState(false);
   const [error, setError] = useState("");
   const [typedText, setTypedText] = useState("");
   const codingEffect = "Generate learning pathways with AI...";
@@ -55,7 +58,27 @@ const AiCall = ({
 
     return () => clearInterval(typingInterval);
   }, []);
-  console.log(userName)
+
+  // Fetch groups user is member of
+  useEffect(() => {
+    const fetchGroups = async () => {
+      setLoadingGroups(true);
+      try {
+        // Fetch user's groups
+        const response = await axios.get("/api/groups/my");
+        if (response.data.data) {
+          const allGroups = response.data.data;
+          // Get all groups (both CUSTOM and CATEGORY)
+          setGroups(allGroups);
+        }
+      } catch (err) {
+        console.error("Error fetching groups:", err);
+      } finally {
+        setLoadingGroups(false);
+      }
+    };
+    fetchGroups();
+  }, []);
 
   function filterByBatches(projects: Project[]): Batch[] {
     const batches: Record<number, Batch> = {};
@@ -79,11 +102,13 @@ const AiCall = ({
     description: string,
     batches: Batch[]
   ) => {
+    // Group is optional - if not selected, course will be in Global
     try {
       const response = await axios.post("/api/query/courseandprojects", {
         title,
         description,
         batches,
+        groupId: groupId || null,
       });
 
       if (!(response.status === 201 || response.status === 200)) {
@@ -157,6 +182,7 @@ const AiCall = ({
       setError("All fields are required.");
       return;
     }
+    // Group and sector are optional - course can be created without either (will be in Global)
     processData();
   };
 
@@ -229,6 +255,29 @@ const AiCall = ({
                 placeholder="I have 2 days of React.js knowledge"
                 className="w-full p-3 rounded-md border border-gray-300 dark:border-neutral-600 focus:ring-2 focus:ring-blue-400 dark:focus:ring-blue-500 focus:border-blue-400 dark:focus:border-blue-500 text-gray-800 dark:text-gray-200 bg-white dark:bg-neutral-700 resize-none placeholder-gray-400 dark:placeholder-gray-500"
               />
+            </div>
+
+            {/* Group Selection - Optional */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Group (Optional)
+              </label>
+              <select
+                value={groupId}
+                onChange={(e) => setGroupId(e.target.value)}
+                disabled={loading || loadingGroups}
+                className="w-full p-3 rounded-md border border-gray-300 dark:border-neutral-600 focus:ring-2 focus:ring-blue-400 dark:focus:ring-blue-500 focus:border-blue-400 dark:focus:border-blue-500 bg-white dark:bg-neutral-700 text-gray-800 dark:text-gray-200"
+              >
+                <option value="">None (will use Global group)</option>
+                {groups.map((group) => (
+                  <option key={group.id} value={group.id}>
+                    {group.name}
+                  </option>
+                ))}
+              </select>
+              <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1">
+                Select a group you are a member of (optional)
+              </p>
             </div>
 
             {error && (

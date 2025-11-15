@@ -18,8 +18,27 @@ import { GetProjectByProjectId } from "../actions/project";
 import { CreateIssue } from "../courses/GithubFunctions";
 import GithubPart from "./GithubPart";
 import Loading from "../../app/(root)/loading";
+import ProgressModal from "../shared/ProgressModal";
+import { ProgressUpdate } from "../../utils/github/progressTracker";
 
-const ProjectDetail = ({ project: initialProject }) => {
+const ProjectDetail = ({ 
+  project: initialProject, 
+  canEdit,
+}: { 
+  project: {
+    id: string;
+    title: string;
+    description?: string;
+    learningObjectives?: unknown[];
+    steps?: unknown[];
+    batchId?: string;
+    [key: string]: unknown;
+  }, 
+  canEdit: boolean,
+  role?: 'OWNER'|'READ_ONLY'|'SYNC_COPY'|'COPY'|null,
+  courseId?: string | null,
+  batchId?: string | null,
+}) => {
   const [project, setProject] = useState(initialProject);
   const [isStepsExpanded, setIsStepsExpanded] = useState(false);
   const [isObjectivesExpanded, setIsObjectivesExpanded] = useState(false);
@@ -36,6 +55,8 @@ const ProjectDetail = ({ project: initialProject }) => {
   const userId = fetchUserId();
   const [user, setUser] = useState(null);
   const [activeTab, setActiveTab] = useState("projects");
+  const [showProgress, setShowProgress] = useState(false);
+  const [progress, setProgress] = useState<ProgressUpdate | null>(null);
   const [showRepoModal, setShowRepoModal] = useState(false);
   const [repoName, setRepoName] = useState("");
   const [existingRepos, setExistingRepos] = useState<string[]>([]);
@@ -254,8 +275,13 @@ const ProjectDetail = ({ project: initialProject }) => {
 
   const startProjectWithRepoName = async (repoNameToUse: string) => {
     try {
-      setLoading(true);
+      // Show progress modal immediately - NO loading screen
+      setShowProgress(true);
+      setProgress({ stage: "initializing", message: "Initializing project setup...", current: 0, total: 100 });
 
+      // Step 1: Sending response to AI
+      setProgress({ stage: "sending_to_ai", message: "Sending request to AI...", current: 10, total: 100 });
+      
       const response = await axios.post("/api/ai/project", {
         topic: project.title,
         learning_objectives: project.learningObjectives,
@@ -266,7 +292,13 @@ const ProjectDetail = ({ project: initialProject }) => {
         throw new Error("Failed to fetch project data.");
       }
 
+      // Step 2: Parsing the data
+      setProgress({ stage: "parsing_data", message: "Parsing AI response...", current: 30, total: 100 });
+      
       const parsedData = JSON.parse(response.data.jsonObject || "{}");
+
+      // Step 3: Getting project info
+      setProgress({ stage: "getting_project_info", message: "Getting project information...", current: 40, total: 100 });
 
       const stepsData = (parsedData?.steps || []).map((step, index) => ({
         index,
@@ -279,7 +311,10 @@ const ProjectDetail = ({ project: initialProject }) => {
       const batchId = project.batchId;
       const projectTitle = batchId ? `${batchId}-Batch` : repoNameToUse;
 
-      // Call CreateIssue function with the validated repo name
+      // Step 4: Making project ready for GitHub
+      setProgress({ stage: "preparing_github", message: "Preparing project for GitHub upload...", current: 50, total: 100 });
+
+      // Call CreateIssue function with the validated repo name and progress callback
       const updatedSteps = await CreateIssue(
         user.githubId,
         repoNameToUse, // Use validated repo name instead of project.title
@@ -288,10 +323,22 @@ const ProjectDetail = ({ project: initialProject }) => {
         projectTitle,
         batchId,
         userId,
-        stepsData
+        stepsData,
+        (update) => {
+          // Scale progress from 50-95% for GitHub operations
+          const githubProgress = 50 + (update.current || 0) * 45 / (update.total || 1);
+          setProgress({
+            ...update,
+            current: Math.round(githubProgress),
+            total: 100,
+          });
+        }
       );
 
       console.log("updatedSteps", updatedSteps);
+
+      // Step 5: Finalizing
+      setProgress({ stage: "completed", message: "Saving project data...", current: 95, total: 100 });
 
       // Map back the issueId to their respective steps
       const newSteps = parsedData.steps.map((step, index) => ({
@@ -311,13 +358,28 @@ const ProjectDetail = ({ project: initialProject }) => {
       const updatedProject = await GetProjectByProjectId(project.id);
       setProject(updatedProject);
       setSteps(updatedProject.steps || []);
-      console.log("Steps", steps);
+
+      // Complete
+      setProgress({ stage: "completed", message: "Project setup completed successfully!", current: 100, total: 100 });
+
+      // Hide progress modal after a short delay
+      setTimeout(() => {
+        setShowProgress(false);
+        setProgress(null);
+      }, 1500);
     } catch (error) {
       console.error("Error starting project:", error);
-      alert("Failed to start project. Please try again.");
-    } finally {
-      setLoading(false);
+      setProgress({
+        stage: "error",
+        message: "Failed to start project. Please try again.",
+        error: error instanceof Error ? error.message : "Unknown error",
+      });
+      setTimeout(() => {
+        setShowProgress(false);
+        setProgress(null);
+      }, 3000);
     }
+    // NO setLoading(false) - we don't use loading screen anymore
   };
 
   const saveProgress = async () => {
@@ -385,10 +447,16 @@ const ProjectDetail = ({ project: initialProject }) => {
   }, []);
 
   return (
-    <div className="flex justify-center items-center min-h-screen p-4">
-      <div className="w-full max-w-4xl space-y-6">
-        {/* Loading Overlay */}
-        {loading && <Loading />}
+    <>
+      <ProgressModal 
+        isOpen={showProgress} 
+        progress={progress}
+        onClose={() => setShowProgress(false)}
+      />
+      <div className="flex justify-center items-center min-h-screen p-4">
+        <div className="w-full max-w-4xl space-y-6">
+          {/* Loading Overlay - Only show for saveProgress, not for project start */}
+          {loading && !showProgress && <Loading />}
 
         <div className="flex space-x-4 mb-4">
           <button
@@ -436,8 +504,8 @@ const ProjectDetail = ({ project: initialProject }) => {
                   {(!steps || steps.length === 0) && (
                     <button
                       onClick={handleStartProjectClick}
-                      disabled={loading || loadingRepos}
-                      className="flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg shadow transition-colors disabled:bg-blue-400"
+                      disabled={loading || loadingRepos || !canEdit}
+                      className={`flex items-center px-4 py-2 font-medium rounded-lg shadow transition-colors ${canEdit ? 'bg-blue-600 hover:bg-blue-700 text-white' : 'bg-neutral-200 text-neutral-500 cursor-not-allowed'}`}
                     >
                       <Play size={16} className="mr-2" /> Start Project
                     </button>
@@ -592,8 +660,8 @@ const ProjectDetail = ({ project: initialProject }) => {
           <div className="flex justify-center">
             <button
               onClick={saveProgress}
-              disabled={loading}
-              className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg shadow transition-colors disabled:bg-blue-400"
+              disabled={loading || !canEdit}
+              className={`px-6 py-3 font-medium rounded-lg shadow transition-colors ${canEdit ? 'bg-blue-600 hover:bg-blue-700 text-white' : 'bg-neutral-200 text-neutral-500 cursor-not-allowed'}`}
             >
               Save Progress
             </button>
@@ -646,7 +714,7 @@ const ProjectDetail = ({ project: initialProject }) => {
                         setRepoError("");
                       }}
                       placeholder="Enter a unique repository name"
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                      className="w-full px-4 py-2 border text-black border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
                       onKeyDown={(e) => {
                         if (e.key === "Enter") {
                           validateAndSubmitRepoName();
@@ -773,15 +841,29 @@ const ProjectDetail = ({ project: initialProject }) => {
           </div>
         </div>
       )}
-    </div>
+      </div>
+    </>
   );
 };
 
-const Page = ({ params }) => {
+const Page = ({ 
+  params, 
+  role,
+  courseId,
+  batchId,
+}: { 
+  params: { id: string }, 
+  role?: 'OWNER'|'READ_ONLY'|'SYNC_COPY'|'COPY'|null,
+  courseId?: string | null,
+  batchId?: string | null,
+}) => {
   const { id } = params;
   const [project, setProject] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  // Only OWNER can edit (COPY creates owned courses, READ_ONLY is read-only)
+  const canEdit = role === 'OWNER';
+  useEffect(()=>{ if (role) console.log('Project access role:', role); }, [role]);
 
   useEffect(() => {
     const fetchProject = async () => {
@@ -829,7 +911,7 @@ const Page = ({ params }) => {
     );
   }
 
-  return <ProjectDetail project={project} />;
+  return <ProjectDetail project={project} canEdit={canEdit} role={role} courseId={courseId} batchId={batchId} />;
 };
 
 export default Page;

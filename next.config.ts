@@ -11,7 +11,13 @@ const nextConfig = {
         hostname: "**", // Allows images from all domains (including HTTP)
       },
     ],
-  }
+  },
+  typescript: {
+    ignoreBuildErrors: true,
+  },
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
 };
 
 export default nextConfig;

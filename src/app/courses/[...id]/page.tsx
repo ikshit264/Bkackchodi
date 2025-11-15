@@ -9,6 +9,8 @@ import { CreateIssue } from "../../../components/courses/GithubFunctions";
 import { UserId as fetchUserId } from "../../../utils/userId";
 import { GetUserByUserId } from "../../../components/actions/user";
 import Loading from "../../(root)/loading";
+import ProgressModal from "../../../components/shared/ProgressModal";
+import { ProgressUpdate } from "../../../utils/github/progressTracker";
 
 const Page = () => {
   const params = useParams<{ id: string }>();
@@ -19,6 +21,9 @@ const Page = () => {
   const [course, setCourse] = useState(null);
   const [loading, setLoading] = useState(false);
   const [expandedBatch, setExpandedBatch] = useState(null);
+  const [canEdit, setCanEdit] = useState(true);
+  const [showProgress, setShowProgress] = useState(false);
+  const [progress, setProgress] = useState<ProgressUpdate | null>(null);
 
   useEffect(() => {
     async function fetchUser() {
@@ -50,6 +55,14 @@ const Page = () => {
       const result = await getCourse();
       if (result.status === "success") {
         setCourse(result.data);
+        try {
+          const my = await axios.get('/api/courses/my');
+          const list = my.data?.data || [];
+          const found = list.find((c: { id: string; __meta?: { ownership?: string } }) => c.id === (id as string));
+          const ownership = found?.__meta?.ownership;
+          // Only OWNER can edit (COPY creates owned courses, READ_ONLY is read-only)
+          setCanEdit(ownership === 'OWNER');
+        } catch {}
       } else {
         setErrors(result.error);
       }
@@ -101,7 +114,11 @@ const Page = () => {
         issueId: null, // Placeholder for issueId
       }));
 
-      // Call CreateIssue and receive updated steps with issueIds
+      // Show progress modal
+      setShowProgress(true);
+      setProgress({ stage: "initializing", message: "Initializing GitHub setup..." });
+
+      // Call CreateIssue with progress callback
       const updatedSteps = await CreateIssue(
         (
           await User
@@ -112,8 +129,17 @@ const Page = () => {
         ProjectTitle, // projectTitle
         batchId, // batchId
         userId, // userId
-        steps // steps
+        steps, // steps
+        (update) => {
+          setProgress(update);
+        }
       );
+
+      // Hide progress modal after completion
+      setTimeout(() => {
+        setShowProgress(false);
+        setProgress(null);
+      }, 1000);
 
       // **Map back the issueId to their respective steps**
       parsedData.steps = parsedData.steps.map((step, index) => ({
@@ -141,25 +167,33 @@ const Page = () => {
   if (errors) return <div className="text-red-500">Error: {errors}</div>;
 
   return (
-    <div className="p-6 max-w-4xl mx-auto">
-      <CourseHeader
-        id={id}
-        title={course?.title}
-        createdAt={course?.createdAt}
+    <>
+      <ProgressModal 
+        isOpen={showProgress} 
+        progress={progress}
+        onClose={() => setShowProgress(false)}
       />
-      {course ? (
-        <div className="border rounded-xl p-6 shadow-2xl bg-white">
-          <BatchList
-            batches={course.batches}
-            expandedBatch={expandedBatch}
-            onBatchToggle={toggleBatch}
-            onStartProject={handleStartProject}
-          />
-        </div>
-      ) : (
-        <p>No course found.</p>
-      )}
-    </div>
+      <div className="p-6 max-w-4xl mx-auto">
+        <CourseHeader
+          id={id}
+          title={course?.title}
+          createdAt={course?.createdAt}
+        />
+        {course ? (
+          <div className="border rounded-xl p-6 shadow-2xl bg-white">
+            <BatchList
+              batches={course.batches}
+              expandedBatch={expandedBatch}
+              onBatchToggle={toggleBatch}
+              onStartProject={handleStartProject}
+              canEdit={canEdit}
+            />
+          </div>
+        ) : (
+          <p>No course found.</p>
+        )}
+      </div>
+    </>
   );
 };
 

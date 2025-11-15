@@ -1,0 +1,71 @@
+name: Local Gemini Pro Config
+version: 1.0.0
+schema: v1
+
+models:
+  - name: Gemini Embedding
+    provider: google
+    model: models/text-embedding-004
+    apiKey: AIzaSyBjnTMygHva5jupvs_rSdB5YTp3VBYVvVQ
+    type: embed
+  - name: Gemini 2.0 Flash
+    provider: gemini
+    model: gemini-2.0-flash
+    apiKey: AIzaSyBjnTMygHva5jupvs_rSdB5YTp3VBYVvVQ
+
+allowFileEdits: true
+allowTerminalCommands: true
+
+# === Modern Context Providers ===
+contextProviders:
+  - provider: repo-map
+    params:
+      includeSignatures: true
+  - provider: code
+  - provider: file
+    params:
+      paths:
+        - ./README.md
+        - ./package.json
+  - provider: tree
+  - provider: diff
+  - provider: open
+  - provider: currentFile
+  - provider: terminal
+  - provider: os
+
+# === Agent ===
+agents:
+  - name: "NextJS Expert"
+    instructions: >
+      You are an expert full-stack developer specializing in Next.js, Prisma,
+      and PostgreSQL. You can understand the entire codebase and modify files
+      intelligently. When editing files:
+      1. Generate minimal diffs, not full replacements.
+      2. Explain what changed before applying.
+      3. Maintain consistent code style and imports.
+      4. Use your context providers to understand the repo structure.
+
+context:
+  - provider: file
+  - provider: code
+  - provider: diff
+  - provider: terminal
+# === Paths ===
+paths:
+  embeddingsDir: ~/.continue/embeddings
+
+# === Optional Local RAG (still available but not required) ===
+indexing:
+  chunkSize: 800
+  overlap: 150
+  exclude:
+    - node_modules/**
+    - .next/**
+    - public/**
+    - .vercel/**
+    - build/**
+    - dist/**
+    - coverage/**
+    - tmp/**
+    - logs/**

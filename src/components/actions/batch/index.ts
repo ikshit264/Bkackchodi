@@ -1,7 +1,8 @@
 "use server";
 
-import { prisma } from "../../../../lib/prisma";
+import { prisma } from "../../../lib/prisma";
 import { GetUserIdByName } from "../user";
+import { auth } from "@clerk/nextjs/server";
 
 export async function GetBatchesByUserIdAndCourseName(
   id: string,
@@ -63,21 +64,32 @@ export async function getBatchesByUserNameandCourseName(
   return batches;
 }
 
-export async function getBatchProjectsByCourseId(userName : string, CourseId: string) {
-  const userId = await GetUserIdByName(userName);
+export async function getBatchProjectsByCourseId(CourseId: string) {
+  const { userId } = await auth();
   if (!userId) {
-    throw Error("User Id Not Found");
+    throw new Error("Unauthorized");
+  }
+  const viewer = await prisma.user.findUnique({ where: { clerkId: userId }, select: { id: true, userName: true } });
+  if (!viewer) {
+    throw new Error("Unauthorized");
   }
 
-  const response = await prisma.course.findFirst({
-    where: {
-      userId: userId,
-      id: CourseId,
-    },
+  const course = await prisma.course.findFirst({
+    where: { id: CourseId },
     select: {
       id: true,
       title: true,
       status: true,
+      userId: true,
+      user: { select: { userName: true } },
+      group: {
+        select: {
+          id: true,
+          name: true,
+          type: true,
+        },
+      },
+      sectorId: true,
       batch: {
         select: {
           id: true,
@@ -97,11 +109,124 @@ export async function getBatchProjectsByCourseId(userName : string, CourseId: st
       },
     },
   });
-  return response;
+  if (!course) return null;
+
+  // permission: owner or has READ_ONLY/SYNC_COPY/COPY access
+  // COPY creates owned courses, so only READ_ONLY and SYNC_COPY exist in CourseAccess
+  const isOwner = course.userId === viewer.id;
+  let role: 'OWNER'|'READ_ONLY'|'SYNC_COPY'|'COPY'|null = null;
+  if (isOwner) {
+    role = 'OWNER';
+  } else {
+    const access = await prisma.courseAccess.findFirst({ 
+      where: { 
+        courseId: course.id, 
+        userId: viewer.id,
+        isDeleted: false 
+      }, 
+      select: { access: true } 
+    });
+    if (!access) {
+      throw new Error("Forbidden");
+    }
+    // Set role based on access level
+    // Note: SYNC_COPY is only for challenges, treat as READ_ONLY for regular access
+    if (access.access === 'READ_ONLY') {
+      role = 'READ_ONLY';
+    } else if (access.access === 'COPY') {
+      role = 'COPY';
+    } else if (access.access === 'SYNC_COPY') {
+      // SYNC_COPY is only for challenges, but we still need to allow viewing
+      role = 'READ_ONLY';
+    } else {
+      throw new Error("Forbidden");
+    }
+  }
+
+  // Get sector info if exists
+  let sector = null;
+  if (course.sectorId) {
+    sector = await prisma.group.findUnique({
+      where: { id: course.sectorId },
+      select: {
+        id: true,
+        name: true,
+        icon: true,
+        type: true,
+      },
+    });
+  }
+
+  // Check if course is part of a challenge
+  let challenge = null;
+  const challengeParticipant = await prisma.challengeParticipant.findFirst({
+    where: {
+      challengeCourseId: CourseId,
+      userId: viewer.id,
+    },
+    include: {
+      challenge: {
+        select: {
+          id: true,
+          name: true,
+          description: true,
+          status: true,
+          type: true,
+          startDate: true,
+          endDate: true,
+          sector: {
+            select: {
+              id: true,
+              name: true,
+              icon: true,
+            },
+          },
+          group: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+          _count: {
+            select: {
+              participants: true,
+            },
+          },
+        },
+      },
+    },
+  });
+
+  if (challengeParticipant?.challenge) {
+    challenge = challengeParticipant.challenge;
+  }
+
+  return { 
+    ...course, 
+    __meta: { 
+      role, 
+      ownerUserName: course.user?.userName,
+      sector,
+      challenge,
+    } 
+  } as any;
 }
 
-export async function getBatchProjectsByBatchId(userId: string, batchId: string) {
+export async function getBatchProjectsByBatchId(batchId: string) {
   try {
+    const { userId } = await auth();
+    if (!userId) throw new Error('Unauthorized');
+    const viewer = await prisma.user.findUnique({ where: { clerkId: userId }, select: { id: true } });
+    if (!viewer) throw new Error('Unauthorized');
+
+    // permission via course
+    const batchWithCourse = await prisma.batch.findUnique({ where: { id: batchId }, select: { course: { select: { id: true, userId: true } } } });
+    if (!batchWithCourse) throw new Error('Batch not found');
+    const isOwner = batchWithCourse.course?.userId === viewer.id;
+    const access = await prisma.courseAccess.findFirst({ where: { courseId: batchWithCourse.course?.id || undefined, userId: viewer.id }, select: { access: true } });
+    const hasAccess = isOwner || Boolean(access);
+    if (!hasAccess) throw new Error('Forbidden');
+
     const batch = await prisma.batch.findUnique({
       where: {
         id: batchId,

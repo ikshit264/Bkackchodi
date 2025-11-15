@@ -7,12 +7,16 @@ type ProjectsProps = {
   Batch: Batch;
   activeTab: string;
   setActiveTab: React.Dispatch<React.SetStateAction<string>>;
+  courseId?: string | null;
+  role?: 'OWNER'|'READ_ONLY'|'SYNC_COPY'|'COPY'|null;
 };
 
 const ProjectList: React.FC<ProjectsProps> = ({
   Batch,
   activeTab,
   setActiveTab,
+  courseId,
+  role,
 }) => {
     // console.log(Batch);
   return (
@@ -30,7 +34,14 @@ const ProjectList: React.FC<ProjectsProps> = ({
           ✖
         </button>
         <div className="flex gap-4 justify-around flex-wrap items-center">
-          {Batch && <ExpandingAccordion items={Batch.projects}/> }
+          {Batch && (
+            <ExpandingAccordion 
+              items={Batch.projects}
+              courseId={courseId}
+              batchId={Batch.id}
+              role={role}
+            />
+          )}
         </div>
       </motion.div>
     </div>

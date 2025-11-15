@@ -25,9 +25,10 @@ export interface Project {
 interface ProjectCardProps {
   project: Project;
   onStartProject: (projectId: string) => void;
+  canEdit?: boolean;
 }
 
-const ProjectCard = ({ project, onStartProject }: ProjectCardProps) => {
+const ProjectCard = ({ project, onStartProject, canEdit = true }: ProjectCardProps) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [activeTab, setActiveTab] = useState<string>("projects");
   const [CourseOutcomes, setCourseOutcomes] = useState(false);
@@ -100,6 +101,7 @@ const ProjectCard = ({ project, onStartProject }: ProjectCardProps) => {
   }, [project?.steps]);
 
   const handleStepStatusChange = (stepIndex: number) => {
+    if (!canEdit) return;
     const updatedSteps = [...steps];
 
     if (updatedSteps[stepIndex].status === "not started") {
@@ -134,6 +136,7 @@ const ProjectCard = ({ project, onStartProject }: ProjectCardProps) => {
   };
 
   const handleCommit = async () => {
+    if (!canEdit) return;
     try {
       const response = await axios.patch("/api/query/project", {
         projectId: project.id,
@@ -276,17 +279,18 @@ const ProjectCard = ({ project, onStartProject }: ProjectCardProps) => {
           <div className="relative z-10">
             {!project.steps || project.steps.length === 0 ? (
               <motion.button
+                disabled={!canEdit}
                 whileHover={{ scale: 1.05, y: -2 }}
                 whileTap={{ scale: 0.95 }}
                 onClick={() => handleStartNow(project.id)}
-                className="absolute -top-3 -right-3 flex items-center space-x-2 px-6 py-3 bg-gradient-to-r from-primary-500 to-primary-600 text-white rounded-xl shadow-glow hover:shadow-hard transition-all duration-300"
+                className={`absolute -top-3 -right-3 flex items-center space-x-2 px-6 py-3 rounded-xl shadow-glow transition-all duration-300 ${canEdit ? 'bg-gradient-to-r from-primary-500 to-primary-600 text-white hover:shadow-hard' : 'bg-neutral-200 text-neutral-500 cursor-not-allowed'}`}
               >
                 <Play size={16} />
                 <span>Start Now</span>
               </motion.button>
             ) : (
               <div>
-                <motion.button
+                  <motion.button
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                   onClick={() => setIsExpanded(!isExpanded)}
@@ -426,7 +430,8 @@ const ProjectCard = ({ project, onStartProject }: ProjectCardProps) => {
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
                     onClick={() => setShowCommitModal(true)}
-                    className="w-full py-3 px-4 bg-gradient-to-r from-accent-500 to-accent-600 text-white rounded-xl shadow-medium hover:shadow-glow transition-all duration-300 font-medium"
+                    disabled={!canEdit}
+                    className={`w-full py-3 px-4 rounded-xl shadow-medium transition-all duration-300 font-medium ${canEdit ? 'bg-gradient-to-r from-accent-500 to-accent-600 text-white hover:shadow-glow' : 'bg-neutral-200 text-neutral-500 cursor-not-allowed'}`}
                   >
                     Commit Steps
                   </motion.button>

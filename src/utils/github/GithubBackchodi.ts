@@ -1,8 +1,5 @@
 /* eslint-disable  @typescript-eslint/no-unused-vars */
 
-import { u } from "framer-motion/dist/types.d-B50aGbjN";
-import { User } from "lucide-react";
-
 // Types for our data structures
 interface CommitResponse {
   commit: {
@@ -49,7 +46,7 @@ export async function GithubTokenExtract(UserId: string) {
     `https://api.clerk.dev/v1/users/${UserId}/oauth_access_tokens/oauth_github`,
     {
       headers: {
-        Authorization: `Bearer ${process.env.NEXT_PUBLIC_CLERK_SECRET_KEY}`,
+        Authorization: `Bearer ${process.env.CLERK_SECRET_KEY}`,
       },
     }
   );

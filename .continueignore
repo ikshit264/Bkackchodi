@@ -1,0 +1,9 @@
+node_modules/**
+.next/**
+.vercel/**
+build/**
+dist/**
+public/**
+coverage/**
+tmp/**
+logs/**

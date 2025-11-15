@@ -132,6 +132,8 @@ class GithubProject {
   githubToken: string;
   GITHUB_GRAPHQL_URL = "https://api.github.com/graphql";
   GITHUB_REST_API_URL = "https://api.github.com";
+  // Cache for status field to avoid repeated lookups
+  private statusFieldCache: Map<string, { fieldId: string; options: { id: string; name: string }[] }> = new Map();
 
   constructor(
     ownerType: "user" | "organization",
@@ -556,6 +558,12 @@ class GithubProject {
     fieldId: string | null;
     options: { id: string; name: string }[] | null;
   }> {
+    // OPTIMIZATION: Check cache first
+    if (this.statusFieldCache.has(projectId)) {
+      const cached = this.statusFieldCache.get(projectId)!;
+      return { fieldId: cached.fieldId, options: cached.options };
+    }
+
     if (!projectId) {
       console.error("Project ID is required for getOrCreateStatusFieldId");
       return { fieldId: null, options: null };
@@ -583,11 +591,18 @@ class GithubProject {
         console.warn("Status field exists but no valid options found");
       }
 
-      return { fieldId: statusField.id, options };
+      // Cache the result
+      const result = { fieldId: statusField.id, options };
+      this.statusFieldCache.set(projectId, result);
+      return result;
     }
 
     // If the field doesn't exist, create it
-    return await this.createStatusField(projectId);
+    const result = await this.createStatusField(projectId);
+    if (result.fieldId) {
+      this.statusFieldCache.set(projectId, result);
+    }
+    return result;
   }
 }
 

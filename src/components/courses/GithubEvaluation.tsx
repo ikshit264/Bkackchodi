@@ -73,6 +73,12 @@ const GithubEvaluation = ({ project }) => {
       const { jsonObject } = await response.json();
       await PushToDB(jsonObject);
       setEvaluationResult(JSON.parse(jsonObject));
+      
+      // Refresh project data to get updated aiEvaluationScore
+      // Note: We need to refetch the project to get updated aiEvaluationScore
+      // Since this is a course page, we might need to refresh the parent component
+      // For now, we'll trigger a page refresh hint
+      window.location.reload();
     } catch (error) {
       console.error("Evaluation error:", error);
       setEvaluationResult({ error: "Failed to evaluate the repository." });
@@ -164,9 +170,23 @@ const GithubEvaluation = ({ project }) => {
                   ))}
                 </ul>
               </div>
-              <p className="text-lg font-bold text-black">
-                🏆 Final Score: {githubData["Final Score"]} / 100
-              </p>
+              {/* Show evaluation score from database if available, otherwise from GithubData */}
+              {project.aiEvaluationScore !== null && project.aiEvaluationScore !== undefined ? (
+                <div className="space-y-2">
+                  <p className="text-lg font-bold text-black">
+                    🏆 Final Score: {project.aiEvaluationScore.toFixed(2)} / 100
+                  </p>
+                  {project.evaluatedAt && (
+                    <p className="text-sm text-gray-500">
+                      Evaluated on: {new Date(project.evaluatedAt).toLocaleDateString()}
+                    </p>
+                  )}
+                </div>
+              ) : (
+                <p className="text-lg font-bold text-black">
+                  🏆 Final Score: {githubData["Final Score"] || "N/A"} / 100
+                </p>
+              )}
             </>
           )}
         </div>

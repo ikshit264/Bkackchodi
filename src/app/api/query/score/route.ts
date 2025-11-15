@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextRequest, NextResponse } from "next/server";
+import { auth } from "@clerk/nextjs/server";
 import getPrismaClient from "../../../../lib/prisma";
 import { fetchGithubStats, fullOrPartialScoreFetch, processCalendar, updateRanksAtomic } from "../../../../lib/BackendHelpers";
 
@@ -85,6 +86,19 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
+    const { userId: clerkId } = await auth();
+    
+    // Track login when user fetches their score
+    if (clerkId) {
+      try {
+        const { trackUserLogin } = await import("../../../../lib/LoginTrackingHelper");
+        await trackUserLogin(clerkId);
+      } catch (error) {
+        console.error("Error tracking login in score fetch:", error);
+        // Continue even if tracking fails
+      }
+    }
+
     const body = await req.json();
     const { userName, year, forceFetch } = body;
     console.log('userName', userName, 'year', year, 'forceFetch', forceFetch);

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import getPrismaClient from "../../../../../lib/prisma";
+import { auth } from "@clerk/nextjs/server";
 
 const prisma = getPrismaClient();
 
@@ -10,6 +11,11 @@ export async function GET(
   const {id} = await params
 
   try {
+    const { userId } = await auth();
+    if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const viewer = await prisma.user.findUnique({ where: { clerkId: userId }, select: { id: true } });
+    if (!viewer) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
     // 🔍 Step 1: Fetch Course
     const course = await prisma.course.findFirst({
       where: {
@@ -21,6 +27,8 @@ export async function GET(
             projects: true, // Fetch projects under each batch
           },
         },
+        user: { select: { id: true } },
+        accesses: { select: { userId: true } },
       },
     });
 
@@ -31,6 +39,11 @@ export async function GET(
         { status: 404 }
       );
     }
+
+    // permission: owner or has access
+    const isOwner = course.user?.id === viewer.id;
+    const hasAccess = isOwner || course.accesses.some(a => a.userId === viewer.id);
+    if (!hasAccess) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
     // ✅ Step 2: Return course with batches and projects
     return NextResponse.json(

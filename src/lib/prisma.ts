@@ -13,4 +13,6 @@ const getPrismaClient = () => {
   }
 };
 
+// Export both default (for backward compatibility) and named export
 export default getPrismaClient;
+export const prisma = getPrismaClient();

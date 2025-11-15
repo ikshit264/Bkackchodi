@@ -4,19 +4,14 @@
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { FaHome, FaRobot } from "react-icons/fa";
-import { IoIosArrowForward, IoIosArrowBack } from "react-icons/io";
+import { IoIosArrowBack } from "react-icons/io";
 import { AiOutlinePlusCircle, AiOutlineProfile } from "react-icons/ai";
-import { Sparkles, RefreshCw, PanelLeftOpen } from "lucide-react";
+import { PanelLeftOpen, Trophy } from "lucide-react";
 import Link from "next/link";
-import axios from "axios";
 import { useUser } from "@clerk/nextjs";
 import { GetUserByUserId } from "../actions/user";
 import { useRouter } from "next/navigation";
-type Course = {
-  id: string;
-  title: string;
-  status?: string;
-};
+import { Shield, Building2 } from "lucide-react";
 
 const Sidenav = () => {
   const { user, isLoaded } = useUser();
@@ -24,10 +19,8 @@ const Sidenav = () => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [isLocked, setIsLocked] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
-  const [isCoursesExpanded, setIsCoursesExpanded] = useState(false);
-  const [courses, setCourses] = useState<Course[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+  const [isAdminUser, setIsAdminUser] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
   const router = useRouter();
 
   useEffect(() => {
@@ -47,6 +40,15 @@ const Sidenav = () => {
 
         const name = fetched.userName;
         setUsername(name ?? null);
+
+        // Check if admin
+        try {
+          const adminRes = await fetch("/api/admin/check");
+          const adminData = await adminRes.json();
+          setIsAdminUser(adminData.isAdmin || false);
+        } catch {
+          setIsAdminUser(false);
+        }
       } catch (err) {
         console.error("Error fetching username:", (err as Error).message);
         setUsername(null);
@@ -56,46 +58,40 @@ const Sidenav = () => {
     fetchUsername();
   }, [user, isLoaded]);
 
-  // Update getCourses function (around line 72):
-  const getCourses = async () => {
-    if (!user) {
-      console.warn("Cannot fetch courses: No authenticated user");
-      return;
-    }
 
-    setLoading(true);
-    setError("");
-    try {
-      const response = await axios.get("/api/query/course");
-
-      const payload =
-        typeof response.data === "string"
-          ? JSON.parse(response.data)
-          : response.data;
-
-      const data: Course[] = Array.isArray(payload?.data) ? payload.data : [];
-
-      setCourses(data);
-    } catch (err) {
-      const message =
-        (err)?.response?.data?.message ||
-        (err as Error).message ||
-        "Failed to fetch courses";
-      console.error("Error fetching courses:", message);
-      setError(message);
-      setCourses([]);
-    } finally {
-      setLoading(false);
-      setIsCoursesExpanded(true);
-    }
-  };
-
+  // Fetch unread notification count
   useEffect(() => {
-    if (user) {
-      // Only fetch if user exists
-      getCourses();
-    }
-  }, [user]);
+    if (!isLoaded || !user) return;
+
+    const fetchUnreadCount = async () => {
+      try {
+        const response = await fetch('/api/notifications?status=unread&limit=1', { cache: 'no-store' });
+        if (response.ok) {
+          const data = await response.json();
+          setUnreadCount(data.total || 0);
+        }
+      } catch (err) {
+        console.error("Error fetching unread notifications count:", err);
+        setUnreadCount(0);
+      }
+    };
+
+    fetchUnreadCount();
+    
+    // Refresh count every 30 seconds
+    const interval = setInterval(fetchUnreadCount, 30000);
+    
+    // Refresh when window regains focus
+    const handleFocus = () => {
+      fetchUnreadCount();
+    };
+    window.addEventListener('focus', handleFocus);
+    
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('focus', handleFocus);
+    };
+  }, [isLoaded, user]);
 
   // Reflect sidebar width as a CSS variable for layout padding
   useEffect(() => {
@@ -140,9 +136,21 @@ const Sidenav = () => {
       href: username ? `/${username}/c` : "/profile",
     },
     {
+      icon: Trophy,
+      label: "Challenges",
+      href: "/challenges",
+      gradient: "from-yellow-500 to-orange-600",
+    },
+    {
       icon: AiOutlineProfile,
-      label: "Courses",
-      expandable: true,
+      label: "Groups",
+      href: "/groups",
+      gradient: "from-secondary-500 to-secondary-600",
+    },
+    {
+      icon: AiOutlineProfile,
+      label: "Notifications",
+      href: "/notifications",
       gradient: "from-secondary-500 to-secondary-600",
     },
     {
@@ -157,9 +165,18 @@ const Sidenav = () => {
       href: username ? `/${username}/profile` : "/",
       gradient: "from-primary-500 to-primary-600",
     },
+    ...(isAdminUser
+      ? [
+          {
+            icon: Shield,
+            label: "Admin",
+            href: "/admin",
+            gradient: "from-purple-500 to-pink-600",
+          },
+        ]
+      : []),
   ];
 
-  if (loading) return null;
 
   return (
     <motion.nav
@@ -259,63 +276,9 @@ const Sidenav = () => {
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: 0.1 * index }}
             >
-              {item.expandable ? (
-                <motion.div
-                  onClick={() => setIsCoursesExpanded(!isCoursesExpanded)}
-                  className="group flex items-center px-4 py-3 rounded-xl hover:bg-neutral-100/50 dark:hover:bg-neutral-800/50 cursor-pointer transition-all duration-300 relative overflow-hidden"
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                >
-                  <div
-                    className={`absolute inset-0 bg-gradient-to-r ${item.gradient} opacity-0 group-hover:opacity-10 transition-opacity duration-300 rounded-xl`}
-                  />
-
-                  <div
-                    className={`w-8 h-8 rounded-lg bg-gradient-to-r ${item.gradient} flex items-center justify-center shadow-medium flex-shrink-0`}
-                  >
-                    <item.icon size={18} className="text-white" />
-                  </div>
-
-                  <AnimatePresence mode="wait">
-                    {isExpanded && (
-                      <motion.div
-                        initial={{ opacity: 0, width: 0 }}
-                        animate={{ opacity: 1, width: "auto" }}
-                        exit={{ opacity: 0, width: 0 }}
-                        transition={{ duration: 0.3, ease: "easeInOut" }}
-                        className="ml-4 flex-1 flex items-center justify-between overflow-hidden"
-                      >
-                        <span className="text-sm font-medium text-gray-900 dark:text-gray-100 whitespace-nowrap">
-                          {item.label}
-                        </span>
-                        <div className="flex items-center space-x-2 flex-shrink-0 ml-2">
-                          <motion.button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              getCourses();
-                            }}
-                            animate={{ rotate: loading ? 720 : 0 }}
-                            transition={{ duration: 1 }}
-                            className="p-1 rounded-lg hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors"
-                          ></motion.button>
-                          <motion.div
-                            animate={{ rotate: isCoursesExpanded ? 90 : 0 }}
-                            transition={{ duration: 0.2 }}
-                          >
-                            <IoIosArrowForward
-                              size={16}
-                              className="text-neutral-600 dark:text-neutral-400"
-                            />
-                          </motion.div>
-                        </div>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </motion.div>
-              ) : (
                 <Link href={item.href}>
                   <motion.div
-                    className="group flex items-center px-4 py-3 rounded-xl hover:bg-neutral-100/50 dark:hover:bg-neutral-800/50 cursor-pointer transition-all duration-300 relative overflow-hidden"
+                    className="group flex items-center px-4 py-3 rounded-xl hover:bg-neutral-100/50 dark:hover:bg-neutral-800/50 cursor-pointer transition-all duration-300 relative overflow-visible"
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
                   >
@@ -330,100 +293,40 @@ const Sidenav = () => {
                     </div>
                     <AnimatePresence mode="wait">
                       {isExpanded && (
-                        <motion.span
+                        <motion.div
                           initial={{ opacity: 0, width: 0 }}
                           animate={{ opacity: 1, width: "auto" }}
                           exit={{ opacity: 0, width: 0 }}
                           transition={{ duration: 0.3, ease: "easeInOut" }}
-                          className="ml-4 text-sm font-medium text-gray-900 dark:text-gray-100 whitespace-nowrap overflow-hidden"
+                          className="ml-4 flex items-center gap-2 flex-1 overflow-hidden"
                         >
-                          {item.label}
-                        </motion.span>
+                          <span className="text-sm font-medium text-gray-900 dark:text-gray-100 whitespace-nowrap">
+                            {item.label}
+                          </span>
+                          {item.label === "Notifications" && unreadCount > 0 && (
+                            <motion.span
+                              initial={{ scale: 0 }}
+                              animate={{ scale: 1 }}
+                              className="bg-red-500 text-white text-xs font-bold rounded-full min-w-[20px] h-5 px-1.5 flex items-center justify-center"
+                            >
+                              {unreadCount > 99 ? '99+' : unreadCount}
+                            </motion.span>
+                          )}
+                        </motion.div>
                       )}
                     </AnimatePresence>
-                  </motion.div>
-                </Link>
-              )}
-
-              {/* Courses Dropdown */}
-              <AnimatePresence>
-                {item.expandable && isCoursesExpanded && isExpanded && (
-                  <motion.div
-                    initial={{ opacity: 0, height: 0 }}
-                    animate={{ opacity: 1, height: "auto" }}
-                    exit={{ opacity: 0, height: 0 }}
-                    transition={{ duration: 0.3, ease: "easeInOut" }}
-                    className="ml-6 mt-2 overflow-hidden"
-                  >
-                    {loading ? (
-                      <div className="flex items-center space-x-2 px-4 py-2">
-                        <motion.div
-                          animate={{ rotate: 360 }}
-                          transition={{
-                            duration: 1,
-                            repeat: Infinity,
-                            ease: "linear",
-                          }}
-                        >
-                          <RefreshCw size={16} className="text-primary-500" />
-                        </motion.div>
-                        <p className="text-sm text-neutral-600 dark:text-neutral-400">
-                          Loading courses...
-                        </p>
-                      </div>
-                    ) : error ? (
-                      <div className="px-4 py-2">
-                        <p className="text-sm text-red-500">{error}</p>
-                      </div>
-                    ) : courses.length === 0 ? (
-                      <div className="px-4 py-2">
-                        <p className="text-sm text-neutral-600 dark:text-neutral-400 flex items-center space-x-2">
-                          <Sparkles size={16} />
-                          <span>No courses available</span>
-                        </p>
-                      </div>
-                    ) : (
-                      <div className="space-y-1">
-                        {courses.map((course, idx) => (
-                          <motion.div
-                            key={course.id}
-                            initial={{ opacity: 0, x: -20 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            exit={{ opacity: 0, x: -20 }}
-                            transition={{ delay: idx * 0.05, duration: 0.2 }}
-                          >
-                            <Link
-                              href={
-                                username
-                                  ? `/${username}/c/${course.id}`
-                                  : `/courses/${course.id}`
-                              }
-                            >
-                              <div className="group flex items-center justify-between px-4 py-2 text-sm bg-neutral-100/30 dark:bg-neutral-800/30 rounded-lg hover:bg-neutral-100/50 dark:hover:bg-neutral-800/50 transition-all duration-300 cursor-pointer">
-                                <span className="text-gray-900 dark:text-gray-100 font-medium truncate">
-                                  {course.title}
-                                </span>
-                                <motion.span
-                                  className={`text-xs px-2 py-1 rounded-full font-medium flex-shrink-0 ml-2 ${
-                                    course.status === "in progress"
-                                      ? "bg-yellow-500/20 text-yellow-600"
-                                      : course.status == "not started"
-                                      ? "bg-red-500/20 text-red-500"
-                                      : "bg-green-500/20 text-green-600"
-                                  }`}
-                                  whileHover={{ scale: 1.05 }}
-                                >
-                                  {course.status ?? "Unknown"}
-                                </motion.span>
-                              </div>
-                            </Link>
-                          </motion.div>
-                        ))}
-                      </div>
+                    {/* Show badge even when sidebar is collapsed */}
+                    {!isExpanded && item.label === "Notifications" && unreadCount > 0 && (
+                      <motion.span
+                        initial={{ scale: 0 }}
+                        animate={{ scale: 1 }}
+                        className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full min-w-[18px] h-[18px] px-1 flex items-center justify-center"
+                      >
+                        {unreadCount > 9 ? '9+' : unreadCount}
+                      </motion.span>
                     )}
                   </motion.div>
-                )}
-              </AnimatePresence>
+                </Link>
             </motion.div>
           ))}
         </div>

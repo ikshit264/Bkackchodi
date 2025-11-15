@@ -5,6 +5,7 @@ import "./globals.css";
 import SyncUser from "../utils/SyncUser";
 import Sidenav from "../components/navbar/Sidebar";
 import AppInitializer from "../components/core/AppInitilaiser";
+import OnboardingChecker from "../components/onboarding/OnboardingChecker";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -72,6 +73,7 @@ export default function RootLayout({
                   </div>
                 </div>
                 <SyncUser />
+                <OnboardingChecker />
                 <main className=" px-4 md:px-6 lg:px-8 min-h-screen">
                   <div className="max-w-7xl mx-auto">
                     {children}

@@ -123,6 +123,7 @@ export function processCalendar(calendar) {
     totalActiveDays,
     currentStreak: current,
     longestStreak: longest,
+    githubContributionDates: allDates, // Return dates for unified streak calculation
   };
 }
 
@@ -183,21 +184,23 @@ export async function fullOrPartialScoreFetch({
   const coll = colls.contributionsCollection;
 
   // 4. Process calendar data
-  const { matrix, totalActiveDays, currentStreak, longestStreak } =
+  const { matrix, totalActiveDays, currentStreak, longestStreak, githubContributionDates } =
     processCalendar(coll.contributionCalendar);
   const commits = coll.totalCommitContributions;
   const issues = coll.totalIssueContributions;
   const pullRequests = coll.totalPullRequestContributions;
   const reviews = coll.totalPullRequestReviewContributions;
   const contribution = coll.contributionCalendar.totalContributions;
-  const finalScore = calcFinalScore({
+  // Calculate GitHub score (separate from global final score)
+  // Use GitHub-only streaks for GitHub score calculation (for analytics)
+  const githubScore = calcFinalScore({
     commits,
     pullRequests,
     issues,
     reviews,
     totalActiveDays,
-    currentStreak,
-    longestStreak,
+    currentStreak, // GitHub-only streak (will be replaced by unified later)
+    longestStreak, // GitHub-only streak (will be replaced by unified later)
   });
 
   // 5. Get available years
@@ -207,17 +210,52 @@ export async function fullOrPartialScoreFetch({
     availableYears.push(y);
   }
 
-  // 6. Update user Score (only if not year-filtered, or if you want to track per-year)
+  // 6. Calculate unified streaks (GitHub + App contributions)
+  let unifiedStreaks;
+  try {
+    const { calculateUnifiedStreaks } = await import("./UnifiedStreakService");
+    unifiedStreaks = await calculateUnifiedStreaks(
+      userId,
+      githubContributionDates || [],
+      0.5 // App contributions count as 0.5 weight (GitHub = 1.0)
+    );
+  } catch (error) {
+    console.error("Error calculating unified streaks:", error);
+    // Fallback to GitHub-only streaks
+    unifiedStreaks = {
+      currentStreak,
+      longestStreak,
+      totalActiveDays,
+      githubStreak: currentStreak,
+      appStreak: 0,
+      combinedStreak: currentStreak,
+    };
+  }
+
+  // Recalculate GitHub score with GitHub-only streaks (for analytics)
+  // This keeps GitHub score separate and accurate
+  // Use GitHub-only streaks for GitHub score calculation
+  const githubScoreWithGitHubStreaks = calcFinalScore({
+    commits,
+    pullRequests,
+    issues,
+    reviews,
+    totalActiveDays: totalActiveDays, // GitHub total active days
+    currentStreak: currentStreak, // GitHub-only current streak
+    longestStreak: longestStreak, // GitHub-only longest streak
+  });
+
+  // 7. Update user Score (only if not year-filtered, or if you want to track per-year)
   if (!year) {
     let scoreRow;
     if (oldScore) {
       scoreRow = await prisma.score.update({
         where: { userId },
         data: {
-          totalActiveDays,
-          currentStreak,
-          longestStreak,
-          finalScore,
+          totalActiveDays: unifiedStreaks.totalActiveDays, // Use unified total active days
+          currentStreak: unifiedStreaks.currentStreak, // Use unified current streak (GitHub + App)
+          longestStreak: unifiedStreaks.longestStreak, // Use unified longest streak (GitHub + App)
+          githubScore: githubScoreWithGitHubStreaks, // Store GitHub score with GitHub-only streaks (for analytics)
           pullRequests,
           commits,
           review: reviews,
@@ -230,10 +268,10 @@ export async function fullOrPartialScoreFetch({
       scoreRow = await prisma.score.create({
         data: {
           userId,
-          totalActiveDays,
-          currentStreak,
-          longestStreak,
-          finalScore,
+          totalActiveDays: unifiedStreaks.totalActiveDays,
+          currentStreak: unifiedStreaks.currentStreak,
+          longestStreak: unifiedStreaks.longestStreak,
+          githubScore: githubScoreWithGitHubStreaks, // Store GitHub score with GitHub-only streaks (for analytics)
           pullRequests,
           commits,
           review: reviews,
@@ -243,6 +281,25 @@ export async function fullOrPartialScoreFetch({
         },
       });
     }
+
+    // Calculate and update global final score (weighted: GitHub + Group scores)
+    // Only force update if forceFetch is true, otherwise let it respect lastUpdatedDate
+    try {
+      const { updateGlobalScore } = await import("./GlobalScoreCalculator");
+      await updateGlobalScore(userId, forceFetch || false).catch((err) => {
+        console.error("Global score update failed (non-blocking):", err);
+        // Don't throw - global score calculation shouldn't block GitHub score update
+      });
+    } catch (importError) {
+      console.warn("GlobalScoreCalculator not available:", importError);
+      // Continue even if calculator can't be imported
+    }
+
+    // Reload score to get updated finalScore (after global score calculation)
+    scoreRow = await prisma.score.findUnique({
+      where: { userId },
+    });
+
     return {
       ...scoreRow,
       matrix,
@@ -251,15 +308,36 @@ export async function fullOrPartialScoreFetch({
       issues,
       pullRequests,
       reviews,
-      totalActiveDays,
-      currentStreak,
-      longestStreak,
-      finalScore,
+      totalActiveDays: unifiedStreaks.totalActiveDays,
+      currentStreak: unifiedStreaks.currentStreak,
+      longestStreak: unifiedStreaks.longestStreak,
+      githubStreak: unifiedStreaks.githubStreak, // GitHub-only streak (for analytics)
+      appStreak: unifiedStreaks.appStreak, // App-only streak (for analytics)
+      finalScore: scoreRow?.finalScore ?? githubScoreWithGitHubStreaks, // Use calculated finalScore from DB
       availableYears,
     };
   }
 
   // For year-specific view, return data without updating DB
+  // Still calculate unified streaks for display
+  let displayStreaks;
+  try {
+    const { calculateUnifiedStreaks } = await import("./UnifiedStreakService");
+    displayStreaks = await calculateUnifiedStreaks(
+      userId,
+      githubContributionDates || []
+    );
+  } catch (error) {
+    displayStreaks = {
+      currentStreak,
+      longestStreak,
+      totalActiveDays,
+      githubStreak: currentStreak,
+      appStreak: 0,
+      combinedStreak: currentStreak,
+    };
+  }
+
   return {
     matrix,
     contribution,
@@ -267,10 +345,12 @@ export async function fullOrPartialScoreFetch({
     issues,
     pullRequests,
     reviews,
-    totalActiveDays,
-    currentStreak,
-    longestStreak,
-    finalScore,
+    totalActiveDays: displayStreaks.totalActiveDays,
+    currentStreak: displayStreaks.currentStreak,
+    longestStreak: displayStreaks.longestStreak,
+    githubStreak: displayStreaks.githubStreak,
+    appStreak: displayStreaks.appStreak,
+    finalScore: oldScore?.finalScore ?? githubScoreWithGitHubStreaks, // Use existing finalScore or githubScore
     availableYears,
     rank: oldScore?.rank ?? null,
   };

@@ -14,24 +14,55 @@ datasource db {
 }
 
 model User {
-  id            String   @id @default(uuid())
-  clerkId       String   @unique
-  githubId      String?  @unique // Storing GitHub ID to avoid duplicates
-  githubOwnerid String?  @unique // Storing GitHub Owner ID to avoid duplicates
-  githubToken   String? // Storing GitHub token for user
-  geminiApiKey  String? // Storing Gemini API key for user
-  groqApiKey    String? // Storing Groq API key for user
-  name          String
-  lastName      String 
-  userName      String  @unique  
-  email         String   @unique
-  avatar        String? // GitHub profile picture URL
-  courses       Course[]
-  collegeName    String?
-  graduationYear Int?
-  score          Score?   @relation("UserScore")
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  id                        String                  @id @default(uuid())
+  clerkId                   String                  @unique
+  githubId                  String?                 @unique // Storing GitHub ID to avoid duplicates
+  githubOwnerid             String?                 @unique // Storing GitHub Owner ID to avoid duplicates
+  githubToken               String? // Storing GitHub token for user
+  geminiApiKey              String? // Storing Gemini API key for user
+  groqApiKey                String? // Storing Groq API key for user
+  name                      String
+  lastName                  String
+  userName                  String                  @unique
+  email                     String                  @unique
+  avatar                    String? // GitHub profile picture URL
+  courses                   Course[]
+  collegeName               String?
+  graduationYear            Int?
+  score                     Score?                  @relation("UserScore")
+  onboardingCompleted       Boolean                 @default(false)
+  groupMemberships          GroupMembership[]
+  groupScores               GroupScore[]
+  createdGroups             Group[]                 @relation("GroupCreator")
+  ownedGroups               Group[]                 @relation("GroupOwner")
+  groupInvitesSent          GroupInvite[]           @relation("GroupInviteFrom")
+  groupInvitesReceived      GroupInvite[]           @relation("GroupInviteTo")
+  notifications             Notification[]
+  courseAccesses            CourseAccess[]
+  courseInvitesSent         CourseInvite[]          @relation("CourseInviteFrom")
+  courseInvitesReceived     CourseInvite[]          @relation("CourseInviteTo")
+  // Phase 1: Badge System
+  userBadges                UserBadge[]
+  // Phase 1: Performance Tracking
+  performanceComparisons    PerformanceComparison[] @relation("UserComparisons")
+  comparedByUsers           PerformanceComparison[] @relation("ComparedByUsers")
+  performanceSnapshots      PerformanceSnapshot[]
+  // Phase 2: Daily Contributions Tracking
+  dailyContributions        DailyContribution[]
+  // Phase 2: Challenge System
+  challengeParticipants     ChallengeParticipant[]
+  challengeInvitesSent      ChallengeInvite[]       @relation("ChallengeInviteFrom")
+  challengeInvitesReceived  ChallengeInvite[]       @relation("ChallengeInviteTo")
+  createdChallenges         Challenge[]             @relation("ChallengeCreator")
+  challengeRequestsSent     ChallengeRequest[]      @relation("ChallengeRequestRequester")
+  challengeRequestsApproved ChallengeRequest[]      @relation("ChallengeRequestApprover")
+  // Phase 1: Location
+  country                   String?
+  city                      String?
+  region                    String? // e.g., "North America", "Asia-Pacific"
+  timezone                  String?
+  createdAt                 DateTime                @default(now())
+  updatedAt                 DateTime                @updatedAt
 }
 
 model Score {
@@ -39,17 +70,20 @@ model Score {
   userId String @unique
   user   User   @relation("UserScore", fields: [userId], references: [id], onDelete: Cascade)
 
+  // GitHub-based metrics
   totalActiveDays Int @default(0)
   currentStreak   Int @default(0)
   longestStreak   Int @default(0)
+  pullRequests    Int @default(0)
+  commits         Int @default(0)
+  review          Int @default(0)
+  issue           Int @default(0)
+  contribution    Int @default(0)
+  githubScore     Int @default(0) // Calculated GitHub score (weighted)
 
-  finalScore   Int  @default(0)
-  pullRequests Int  @default(0)
-  commits      Int  @default(0)
-  review       Int  @default(0)
-  issue        Int  @default(0)
-  contribution Int  @default(0)
-  rank         Int? 
+  // Global score (weighted combination of GitHub + Group scores)
+  finalScore Float @default(0)
+  rank       Int?
 
   lastUpdatedDate DateTime @default(now()) // business-defined "last updated"
   createdAt       DateTime @default(now())
@@ -59,14 +93,34 @@ model Score {
 }
 
 model Course {
-  id        String   @id @default(uuid())
-  title     String
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  batch     Batch[]
-  status    String   @default("not started") // e.g., "In Progress", "Completed", "Not Started"
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id             String    @id @default(uuid())
+  title          String
+  userId         String
+  user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  groupId        String?
+  group          Group?    @relation(fields: [groupId], references: [id], onDelete: SetNull)
+  // Optional assignment to a sector (category group)
+  sectorId       String?
+  // Track cloned courses
+  sourceCourseId String?
+  sourceCourse   Course?   @relation("CourseClones", fields: [sourceCourseId], references: [id], onDelete: SetNull)
+  clonedCourses  Course[]  @relation("CourseClones")
+  // Soft delete support (user-initiated deletions)
+  isDeleted      Boolean   @default(false)
+  deletedAt      DateTime?
+  batch          Batch[]
+  status         String    @default("not started") // e.g., "In Progress", "Completed", "Not Started"
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  // Access control (sharing)
+  accesses             CourseAccess[]
+  invites              CourseInvite[]
+  // Challenge relations
+  challengeAttachments Challenge[]            @relation
+  challengeCourses     ChallengeParticipant[] @relation("ChallengeCourse")
+
+  @@index([sourceCourseId])
 }
 
 model Batch {
@@ -82,20 +136,513 @@ model Batch {
 }
 
 model Project {
-  id                 String   @id @default(uuid())
+  id                 String    @id @default(uuid())
   title              String
-  githubRepo         Json?    @db.JsonB // Store GitHub repo details as JSON name, id;
+  githubRepo         Json?     @db.JsonB // Store GitHub repo details as JSON name, id;
   description        String
   level              String // e.g., Beginner, Intermediate, Advanced
-  status             String   @default("not started") // e.g., "In Progress", "Completed", "Not Started"
+  status             String    @default("not started") // e.g., "In Progress", "Completed", "Not Started"
   batchId            String
-  batch              Batch    @relation(fields: [batchId], references: [id], onDelete: Cascade)
-  position           Int      @default(1) // Unique numbering for each project within a batch
-  learningObjectives Json     @db.JsonB // Store nested objectives as JSON changes
-  steps              Json?    @db.JsonB // Stores all the steps but it is optional
-  GithubData         Json?    @db.JsonB // Store GitHub data
-  createdAt          DateTime @default(now())
-  updatedAt          DateTime @updatedAt
+  batch              Batch     @relation(fields: [batchId], references: [id], onDelete: Cascade)
+  position           Int       @default(1) // Unique numbering for each project within a batch
+  learningObjectives Json      @db.JsonB // Store nested objectives as JSON changes
+  steps              Json?     @db.JsonB // Stores all the steps but it is optional
+  GithubData         Json?     @db.JsonB // Store GitHub data
+  aiEvaluationScore  Float? // AI evaluation score (0-100) extracted from GithubData
+  evaluatedAt        DateTime? // When the project was evaluated
+  // SYNC_COPY tracking fields
+  sourceProjectId   String? // Project ID this was synced from (for SYNC_COPY)
+  syncedAt          DateTime? // When this project was synced
+  sourceProject     Project?  @relation("ProjectSync", fields: [sourceProjectId], references: [id], onDelete: SetNull)
+  syncedProjects    Project[] @relation("ProjectSync")
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  // Challenge relations
+  challengeAttachments Challenge[] @relation
 
   @@unique([batchId, position]) // Ensures unique numbering within a batch
+  @@index([sourceProjectId])
+}
+
+model Group {
+  id                String             @id @default(uuid())
+  name              String             @unique
+  description       String?
+  type              GroupType          @default(CUSTOM) // CUSTOM or CATEGORY
+  icon              String? // For category groups (emoji or icon URL)
+  creatorId         String?
+  creator           User?              @relation("GroupCreator", fields: [creatorId], references: [id], onDelete: SetNull)
+  // New fields for privacy and ownership
+  ownerId           String?
+  owner             User?              @relation("GroupOwner", fields: [ownerId], references: [id], onDelete: SetNull)
+  isPrivate         Boolean            @default(true) // Category groups should be public (isPrivate=false)
+  settings          Json?
+  // Soft delete support (owner/admin initiated deletions)
+  isDeleted         Boolean            @default(false)
+  deletedAt         DateTime?
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+  members           GroupMembership[]
+  courses           Course[]
+  scores            GroupScore[]
+  invites           GroupInvite[]
+  sectorChallenges  Challenge[]        @relation("SectorChallenges")
+  groupChallenges   Challenge[]        @relation("GroupChallenges")
+  challengeRequests ChallengeRequest[]
+
+  @@index([name])
+  @@index([type])
+  @@index([type, isPrivate])
+}
+
+model GroupMembership {
+  id       String    @id @default(uuid())
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId   String
+  group    Group     @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  groupId  String
+  joinedAt DateTime  @default(now())
+  leftAt   DateTime?
+
+  role GroupRole @default(MEMBER)
+
+  @@unique([userId, groupId])
+  @@index([userId, groupId])
+  @@index([groupId])
+}
+
+model GroupScore {
+  id      String @id @default(uuid())
+  user    User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId  String
+  group   Group  @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  groupId String
+
+  // Group-specific score calculation components
+  coursesStarted          Int      @default(0) // Number of courses started in this group
+  averageCourseCompletion Float    @default(0) // Average percentage of course completion
+  projectsStarted         Int      @default(0) // Number of projects started in this group
+  projectsCompleted       Int      @default(0) // Number of projects completed (after evaluation)
+  totalAiEvaluationScore  Float    @default(0) // Sum of all AI evaluation scores
+  finalScore              Float    @default(0) // Weighted final score for this group
+  rank                    Int?
+  lastUpdatedDate         DateTime @default(now())
+  updatedAt               DateTime @updatedAt
+
+  @@unique([userId, groupId])
+  @@index([userId, groupId])
+  @@index([groupId, finalScore])
+  @@index([groupId])
+}
+
+// ===== New Enums =====
+
+enum GroupRole {
+  OWNER
+  ADMIN
+  MEMBER
+}
+
+enum GroupType {
+  CUSTOM // User-created groups
+  CATEGORY // Pre-defined category groups (formerly sectors)
+}
+
+enum InviteStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+  CANCELLED
+  EXPIRED
+}
+
+enum CourseAccessLevel {
+  READ_ONLY // Was VIEWER
+  COPY // Was CLONE
+  SYNC_COPY // Was CLONE_AND_VIEW
+}
+
+// Phase 1: Badge System Enums
+enum BadgeCategory {
+  PROJECTS
+  STREAKS
+  GROUP
+  GITHUB
+  COURSE
+  MILESTONE
+}
+
+enum BadgeRarity {
+  COMMON
+  RARE
+  EPIC
+  LEGENDARY
+}
+
+// ===== New Models =====
+
+model GroupInvite {
+  id         String       @id @default(uuid())
+  groupId    String
+  fromUserId String
+  toUserId   String
+  status     InviteStatus @default(PENDING)
+  role       GroupRole    @default(MEMBER)
+  expiresAt  DateTime?
+  createdAt  DateTime     @default(now())
+
+  group    Group @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  fromUser User  @relation("GroupInviteFrom", fields: [fromUserId], references: [id], onDelete: Cascade)
+  toUser   User  @relation("GroupInviteTo", fields: [toUserId], references: [id], onDelete: Cascade)
+
+  @@index([toUserId, status])
+  @@index([groupId, status])
+}
+
+model Notification {
+  id              String    @id @default(uuid())
+  recipientUserId String
+  type            String
+  data            Json
+  isRead          Boolean   @default(false)
+  readAt          DateTime?
+  createdAt       DateTime  @default(now())
+
+  recipient User @relation(fields: [recipientUserId], references: [id], onDelete: Cascade)
+
+  @@index([recipientUserId, isRead, createdAt])
+}
+
+model CourseAccess {
+  id        String            @id @default(uuid())
+  courseId  String
+  userId    String
+  access    CourseAccessLevel
+  isDeleted Boolean           @default(false)
+  deletedAt DateTime?
+  createdAt DateTime          @default(now())
+
+  course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([courseId, userId])
+  @@index([userId])
+  @@index([access])
+  @@index([createdAt])
+  @@index([isDeleted])
+}
+
+model CourseInvite {
+  id         String            @id @default(uuid())
+  courseId   String
+  fromUserId String
+  toUserId   String
+  access     CourseAccessLevel
+  status     InviteStatus      @default(PENDING)
+  expiresAt  DateTime?
+  createdAt  DateTime          @default(now())
+  updatedAt  DateTime          @updatedAt
+
+  course   Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  fromUser User   @relation("CourseInviteFrom", fields: [fromUserId], references: [id], onDelete: Cascade)
+  toUser   User   @relation("CourseInviteTo", fields: [toUserId], references: [id], onDelete: Cascade)
+
+  @@index([toUserId, status])
+  @@index([courseId, status])
+  @@index([expiresAt])
+  @@index([status])
+}
+
+// ===== Phase 1: Badge System Models =====
+
+model Badge {
+  id          String         @id @default(uuid())
+  name        String         @unique
+  description String
+  icon        String? // Icon URL or emoji (fallback)
+  image       String? // Badge image URL (primary)
+  category    BadgeCategory
+  rarity      BadgeRarity    @default(COMMON)
+  criteria    Json // Criteria for earning (e.g., { "projectsCompleted": 10 })
+  templateId  String? // Reference to BadgeTemplate if created from template
+  template    BadgeTemplate? @relation(fields: [templateId], references: [id], onDelete: SetNull)
+  createdAt   DateTime       @default(now())
+
+  userBadges UserBadge[]
+
+  @@index([category])
+  @@index([rarity])
+  @@index([templateId])
+}
+
+model BadgeTemplate {
+  id             String        @id @default(uuid())
+  name           String        @unique
+  description    String
+  image          String? // Badge image URL
+  icon           String? // Fallback icon/emoji
+  category       BadgeCategory
+  rarity         BadgeRarity   @default(COMMON)
+  conditionType  String // e.g., "streak", "projects_completed", "commits", "login_days", "course_completion", etc.
+  conditionValue Json // The threshold or condition (e.g., { "days": 100 }, { "count": 50 })
+  criteria       Json // Full criteria JSON (can be AI-generated from natural language)
+  isActive       Boolean       @default(true)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  badges Badge[]
+
+  @@index([isActive])
+  @@index([conditionType])
+}
+
+model UserBadge {
+  id       String   @id @default(uuid())
+  userId   String
+  badgeId  String
+  earnedAt DateTime @default(now())
+  progress Int      @default(0) // For progress-based badges
+
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  badge Badge @relation(fields: [badgeId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, badgeId])
+  @@index([userId])
+  @@index([badgeId])
+}
+
+// ===== Phase 1: Performance Tracking Models =====
+
+model PerformanceComparison {
+  id             String   @id @default(uuid())
+  userId         String
+  comparedUserId String
+  metrics        Json // Store comparison data
+  createdAt      DateTime @default(now())
+
+  user         User @relation("UserComparisons", fields: [userId], references: [id], onDelete: Cascade)
+  comparedUser User @relation("ComparedByUsers", fields: [comparedUserId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, comparedUserId])
+  @@index([userId])
+  @@index([comparedUserId])
+}
+
+model PerformanceSnapshot {
+  id           String   @id @default(uuid())
+  userId       String
+  snapshotDate DateTime @default(now())
+  metrics      Json // Store snapshot data (score, rank, projects, etc.)
+  createdAt    DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, snapshotDate])
+  @@index([snapshotDate])
+}
+
+// ===== Phase 2: Daily Contributions Tracking Model =====
+
+enum ContributionType {
+  PROJECT_COMPLETED
+  PROJECT_STARTED
+  COURSE_COMPLETED
+  COURSE_STARTED
+  BADGE_EARNED
+  LOGIN
+  COMMENT
+  GROUP_JOINED
+  SECTOR_JOINED
+  PROJECT_EVALUATED
+  COURSE_CREATED
+}
+
+model DailyContribution {
+  id               String           @id @default(uuid())
+  userId           String
+  date             DateTime         @db.Date // Date only (no time)
+  contributionType ContributionType
+  count            Int              @default(1) // Number of contributions of this type on this day
+  metadata         Json? // Additional data (e.g., project ID, badge ID, etc.)
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, date, contributionType])
+  @@index([userId, date])
+  @@index([date])
+  @@index([userId, contributionType])
+  @@index([date, contributionType])
+}
+
+// ===== Phase 2: Challenge System Models =====
+
+enum ChallengeStatus {
+  DRAFT
+  ACTIVE
+  COMPLETED
+  CANCELLED
+}
+
+enum ChallengeType {
+  TIME_LIMITED // e.g., "Complete 5 projects in 7 days"
+  SKILL_BASED // e.g., "Master React in 30 days"
+  GROUP // Team competitions
+  SECTOR_SPECIFIC // Sector-specific challenges
+  STREAK // Streak challenges
+}
+
+enum ChallengeParticipantStatus {
+  JOINED
+  IN_PROGRESS
+  COMPLETED
+  FAILED
+  LEFT
+}
+
+model Challenge {
+  id          String          @id @default(uuid())
+  name        String
+  description String
+  type        ChallengeType
+  status      ChallengeStatus @default(DRAFT)
+
+  // Visibility & Access
+  isPublic  Boolean @default(false) // true = admin-created, visible to all
+  createdBy String // User ID of creator
+
+  // Targeting (mutually exclusive)
+  sectorId String? // If sector-specific (admin only)
+  groupId  String? // If group-specific (user must be owner/admin)
+
+  // Content attachment (mutually exclusive)
+  courseId  String? // Attached course
+  projectId String? // Attached project
+
+  // Timeline
+  startDate DateTime?
+  endDate   DateTime?
+
+  // Criteria & Rewards
+  criteria Json // { "pointsRequired": 100, "projectsCompleted": 5 }
+  rewards  Json? // Badge mapping: { "1": "badgeId", "2-4": "badgeId2", ... }
+
+  maxParticipants Int?
+
+  // Soft delete
+  isDeleted Boolean   @default(false)
+  deletedAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  participants ChallengeParticipant[]
+  invites      ChallengeInvite[]
+  request      ChallengeRequest?      @relation
+  sector       Group?                 @relation("SectorChallenges", fields: [sectorId], references: [id], onDelete: SetNull)
+  group        Group?                 @relation("GroupChallenges", fields: [groupId], references: [id], onDelete: SetNull)
+  course       Course?                @relation(fields: [courseId], references: [id], onDelete: SetNull)
+  project      Project?               @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  creator      User                   @relation("ChallengeCreator", fields: [createdBy], references: [id], onDelete: Cascade)
+
+  @@index([status, isPublic])
+  @@index([createdBy])
+  @@index([groupId])
+  @@index([courseId])
+  @@index([projectId])
+  @@index([startDate, endDate])
+  @@index([isDeleted])
+}
+
+model ChallengeParticipant {
+  id          String                     @id @default(uuid())
+  challengeId String
+  userId      String
+  status      ChallengeParticipantStatus @default(JOINED)
+
+  // Progress tracking
+  progress Json // { "points": 75, "projectsCompleted": 3, "courseProgress": 60 }
+  points   Int  @default(0) // Calculated points from AI evaluation scores
+  rank     Int? // Current rank in challenge
+
+  // Course/Project access (if challenge has attached course/project)
+  challengeCourseId  String? // Reference to cloned course for this challenge
+  challengeProjectId String? // Reference to cloned project (if project-only challenge)
+
+  completedAt DateTime?
+  joinedAt    DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  challenge       Challenge @relation(fields: [challengeId], references: [id], onDelete: Cascade)
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  challengeCourse Course?   @relation("ChallengeCourse", fields: [challengeCourseId], references: [id], onDelete: SetNull)
+
+  @@unique([challengeId, userId])
+  @@index([userId, status])
+  @@index([challengeId, status])
+  @@index([challengeId, points]) // For ranking
+  @@index([challengeId, rank])
+}
+
+model ChallengeInvite {
+  id          String       @id @default(uuid())
+  challengeId String
+  fromUserId  String // Challenge creator
+  toUserId    String // Invited user
+  status      InviteStatus @default(PENDING) // PENDING, ACCEPTED, REJECTED
+  expiresAt   DateTime? // 7 days from creation
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  challenge Challenge @relation(fields: [challengeId], references: [id], onDelete: Cascade)
+  fromUser  User      @relation("ChallengeInviteFrom", fields: [fromUserId], references: [id], onDelete: Cascade)
+  toUser    User      @relation("ChallengeInviteTo", fields: [toUserId], references: [id], onDelete: Cascade)
+
+  @@unique([challengeId, toUserId])
+  @@index([toUserId, status])
+  @@index([challengeId, status])
+  @@index([expiresAt])
+}
+
+enum ChallengeRequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model ChallengeRequest {
+  id          String                 @id @default(uuid())
+  requestedBy String // User who requested the challenge
+  groupId     String // Group for which challenge is requested
+  status      ChallengeRequestStatus @default(PENDING) // PENDING, APPROVED, REJECTED
+  challengeId String?                @unique // Created challenge ID (after approval)
+
+  // Challenge data (stored as JSON until approval)
+  name            String
+  description     String
+  type            ChallengeType
+  courseId        String? // Original requester's course ID
+  projectId       String? // Original requester's project ID
+  startDate       DateTime?
+  endDate         DateTime?
+  criteria        Json
+  rewards         Json?
+  maxParticipants Int?
+
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  approvedAt DateTime?
+  approvedBy String? // Owner/admin who approved
+
+  requester User       @relation("ChallengeRequestRequester", fields: [requestedBy], references: [id], onDelete: Cascade)
+  approver  User?      @relation("ChallengeRequestApprover", fields: [approvedBy], references: [id], onDelete: SetNull)
+  group     Group      @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  challenge Challenge? @relation(fields: [challengeId], references: [id], onDelete: SetNull)
+
+  @@index([groupId, status])
+  @@index([requestedBy, status])
+  @@index([status])
 }

@@ -2,7 +2,8 @@
 
 "use server"
 
-import { prisma } from "../../../../lib/prisma"
+import { prisma } from "../../../../lib/prisma";
+
 
 export async function GetUserByUserId(id : string) {
   if (!id) {
@@ -36,32 +37,45 @@ export async function GetUserByUserName(userName : string) {
   return response;
 }
 
-export async function UpdateUserDetails(id : string, data : any) {
-  if (!id) {
-    throw new Error("UpdateUserDetails: Provided userName is invalid or undefined");
+export async function UpdateUserDetails(clerkId : string, data : any) {
+  if (!clerkId) {
+    throw new Error("UpdateUserDetails: Provided clerkId is invalid or undefined");
   }
+  const updateData: any = {
+    name: data.name,
+    lastName: data.lastName
+  };
+  
+  // Add optional fields if provided
+  if (data.collegeName !== undefined) {
+    updateData.collegeName = data.collegeName || null;
+  }
+  if (data.graduationYear !== undefined) {
+    updateData.graduationYear = data.graduationYear ? parseInt(data.graduationYear) : null;
+  }
+  if (data.avatar !== undefined) {
+    updateData.avatar = data.avatar || null;
+  }
+  
   const response = await prisma.user.update({
     where: {
-      id: id
+      clerkId: clerkId
     },
-    data: {
-      name: data.name,
-      lastName: data.lastName
-    }
+    data: updateData
   });
   if (!response) {
-    throw new Error("User not found in Clerk");
+    throw new Error("User not found");
   }
   return response;
 }
 
-export async function UpdateUserApiDetails(id : string, data : any){
-  if (!id) {
-    throw new Error("UpdateUserDetails: Provided userName is invalid or undefined");
+export async function UpdateUserApiDetails(clerkId : string, data : any){
+  if (!clerkId) {
+    throw new Error("UpdateUserApiDetails: Provided clerkId is invalid or undefined");
   }
   const response = await prisma.user.update({
     where: {
-      id: id
+      clerkId: clerkId
     },
     data: {
       geminiApiKey: data.gemini_api_key ?? '',
@@ -69,7 +83,7 @@ export async function UpdateUserApiDetails(id : string, data : any){
     }
   });
   if (!response) {
-    throw new Error("User not found in Clerk");
+    throw new Error("User not found");
   }
   return response;
 }

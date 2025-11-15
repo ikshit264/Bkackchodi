@@ -5,6 +5,10 @@ import { GetUserByUserId } from "../../../../components/actions/user";
 import ProfileForm from "../../../../components/shared/ProfileForm";
 import Loading from "../../loading";
 import GitHubHeatmap from "../../../../components/dashboard/GithubHeatMap";
+import AppHeatmap from "../../../../components/dashboard/AppHeatmap";
+import GroupRankingsTable from "../../../../components/group/GroupRankingsTable";
+import BadgeCollection from "../../../../components/badges/BadgeCollection";
+import PerformanceDashboard from "../../../../components/performance/PerformanceDashboard";
 import { useUser } from "@clerk/nextjs";
 
 const ProfilePage = () => {
@@ -51,12 +55,25 @@ const ProfilePage = () => {
         <div className=" rounded-2xl shadow-[0_8px_0_0_rgba(0,0,0,0.1)] border-4 border-slate-800 p-6 transform transition-transform hover:-translate-y-1 relative z-0">
           <div className="mb-4">
             <h2 className="text-2xl font-bold text-white-500 uppercase tracking-wide">
-              Contribution Activity
+              GitHub Contribution Activity
             </h2>
             <div className="h-1 w-24 bg-gradient-to-r from-emerald-500 to-teal-600 mt-2 rounded-full"></div>
           </div>
           <GitHubHeatmap userName={userData.userName} />
         </div>
+
+        {/* App Contribution Heatmap Card */}
+        {userData && (
+          <div className=" rounded-2xl shadow-[0_8px_0_0_rgba(0,0,0,0.1)] border-4 border-slate-800 p-6 transform transition-transform hover:-translate-y-1 relative z-0">
+            <div className="mb-4">
+              <h2 className="text-2xl font-bold text-white-500 uppercase tracking-wide">
+                App Contribution Activity
+              </h2>
+              <div className="h-1 w-24 bg-gradient-to-r from-blue-500 to-indigo-600 mt-2 rounded-full"></div>
+            </div>
+            <AppHeatmap userId={userData.id} />
+          </div>
+        )}
 
         <div className=" rounded-2xl shadow-[0_8px_0_0_rgba(0,0,0,0.1)] border-4 border-slate-800 p-6 transform transition-transform hover:-translate-y-1 relative z-0">
           <div className="mb-4">
@@ -67,6 +84,45 @@ const ProfilePage = () => {
           </div>
           <ProfileForm user={userData} />
         </div>
+
+        {/* Badges Section */}
+        {userData && (
+          <div className=" rounded-2xl shadow-[0_8px_0_0_rgba(0,0,0,0.1)] border-4 border-slate-800 p-6 transform transition-transform hover:-translate-y-1 relative z-0">
+            <div className="mb-4">
+              <h2 className="text-2xl font-bold text-white-500 uppercase tracking-wide">
+                Badges & Achievements
+              </h2>
+              <div className="h-1 w-24 bg-gradient-to-r from-yellow-500 to-orange-600 mt-2 rounded-full"></div>
+            </div>
+            <BadgeCollection userId={userData.id} />
+          </div>
+        )}
+
+        {/* Performance Dashboard Section */}
+        {userData && (
+          <div className=" rounded-2xl shadow-[0_8px_0_0_rgba(0,0,0,0.1)] border-4 border-slate-800 p-6 transform transition-transform hover:-translate-y-1 relative z-0">
+            <div className="mb-4">
+              <h2 className="text-2xl font-bold text-white-500 uppercase tracking-wide">
+                Performance Analytics
+              </h2>
+              <div className="h-1 w-24 bg-gradient-to-r from-purple-500 to-pink-600 mt-2 rounded-full"></div>
+            </div>
+            <PerformanceDashboard userId={userData.id} />
+          </div>
+        )}
+
+        {/* Group Rankings Section */}
+        {userData && (
+          <div className=" rounded-2xl shadow-[0_8px_0_0_rgba(0,0,0,0.1)] border-4 border-slate-800 p-6 transform transition-transform hover:-translate-y-1 relative z-0">
+            <div className="mb-4">
+              <h2 className="text-2xl font-bold text-white-500 uppercase tracking-wide">
+                Group Rankings
+              </h2>
+              <div className="h-1 w-24 bg-gradient-to-r from-emerald-500 to-teal-600 mt-2 rounded-full"></div>
+            </div>
+            <GroupRankingsTable userId={userData.id} />
+          </div>
+        )}
       </div>
     </div>
   );

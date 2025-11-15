@@ -15,6 +15,12 @@ export async function GetCoursesById(id: string) {
       id: true,
       title: true,
       status: true,
+      group: {
+        select: {
+          id: true,
+          name: true,
+        },
+      },
     },
   });
 
